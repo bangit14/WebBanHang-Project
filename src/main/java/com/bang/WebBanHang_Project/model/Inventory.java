@@ -15,10 +15,7 @@ public class Inventory extends AbstractEntity<Long>{
     @Column(name = "quantity")
     private Long quantity;
 
-    @ManyToOne
-    @JoinColumn(name = "product_id")
+    @Column(name = "product_id")
     private ProductEntity product;
-
-
 
 }

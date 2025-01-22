@@ -10,7 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Table(name = "tbl_category")
-public class Category extends AbstractEntity<Integer> {
+public class Category extends AbstractEntity<Long> {
 
     @Column(name = "name")
     private String name;

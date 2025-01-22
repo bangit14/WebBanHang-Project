@@ -42,8 +42,8 @@ public class CustomizeRequestFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader(AUTHORIZATION);
         if (StringUtils.hasLength(authHeader) && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            log.info("token: {}...", token.substring(0, 20));
+            String token = authHeader.substring(7).replace("\"","");
+            log.info("token: {}...", token.substring(0, 15));
             String username = "";
             try {
                 username = jwtService.extractUsername(token, TokenType.ACCESS_TOKEN);
@@ -51,7 +51,9 @@ public class CustomizeRequestFilter extends OncePerRequestFilter {
             } catch (AccessDeniedException e) {
                 log.info(e.getMessage());
                 response.setStatus(HttpServletResponse.SC_OK);
-                response.getWriter().write(errorResponse(e.getMessage()));
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                response.getWriter().write(errorResponse(request.getRequestURI(), e.getMessage()));
                 return;
             }
 
@@ -69,12 +71,13 @@ public class CustomizeRequestFilter extends OncePerRequestFilter {
         }
     }
 
-    private String errorResponse(String message) {
+    private String errorResponse(String url,String message) {
         try {
             ErrorResponse error = new ErrorResponse();
             error.setTimestamp(new Date());
-            error.setError("Forbidden");
             error.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            error.setPath(url);
+            error.setError("Forbidden");
             error.setMessage(message);
 
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -89,6 +92,7 @@ public class CustomizeRequestFilter extends OncePerRequestFilter {
     private class ErrorResponse {
         private Date timestamp;
         private int status;
+        private String path;
         private String error;
         private String message;
     }

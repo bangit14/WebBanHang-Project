@@ -6,11 +6,13 @@ import com.bang.WebBanHang_Project.controller.request.UserPasswordRequest;
 import com.bang.WebBanHang_Project.controller.request.UserUpdateRequest;
 import com.bang.WebBanHang_Project.controller.response.UserPageResponse;
 import com.bang.WebBanHang_Project.controller.response.UserResponse;
+import com.bang.WebBanHang_Project.exception.InvalidDataException;
 import com.bang.WebBanHang_Project.exception.ResourceNotFoundException;
 import com.bang.WebBanHang_Project.model.AddressEntity;
 import com.bang.WebBanHang_Project.model.UserEntity;
 import com.bang.WebBanHang_Project.repository.AddressRepository;
 import com.bang.WebBanHang_Project.repository.UserRepository;
+import com.bang.WebBanHang_Project.service.EmailService;
 import com.bang.WebBanHang_Project.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -36,6 +39,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final AddressRepository addressRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     @Override
     public UserPageResponse findAll(String keyword, String sort, int page, int size) {
@@ -107,6 +111,12 @@ public class UserServiceImpl implements UserService {
     @Transactional(rollbackFor = Exception.class)
     public long save(UserCreationRequest req) {
         log.info("Saving user: {}", req);
+
+        UserEntity userByEmail = userRepository.findByEmail(req.getEmail());
+        if (userByEmail != null) {
+            throw new InvalidDataException("Email already exists");
+        }
+
         UserEntity user = new UserEntity();
         user.setFirstName(req.getFirstName());
         user.setLastName(req.getLastName());
@@ -138,6 +148,12 @@ public class UserServiceImpl implements UserService {
             });
             addressRepository.saveAll(addresses);
             log.info("Saved addresses: {}", addresses);
+        }
+
+        try {
+            emailService.verificationEmail(req.getEmail(), req.getUsername());
+        } catch (IOException e) {
+            throw new InvalidDataException("Send email failed");
         }
 
         return user.getId();

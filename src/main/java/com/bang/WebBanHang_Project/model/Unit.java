@@ -16,7 +16,4 @@ public class Unit extends AbstractEntity<Integer>{
     @Column(name = "description")
     private String description;
 
-    @ManyToOne
-    @JoinColumn(name = "product_id")
-    private ProductEntity product;
 }
