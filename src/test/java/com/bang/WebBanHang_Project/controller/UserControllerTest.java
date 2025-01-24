@@ -95,7 +95,18 @@ public class UserControllerTest {
 
     @Test
     @WithMockUser(authorities = {"admin","manager"})
-    void shouldGetUserDetail(){
+    void shouldGetUserDetail() throws Exception {
         when(userService.findById(anyLong())).thenReturn(bangIt);
+
+        // Perform the test
+        mockMvc.perform(get("/user/1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status", is(200)))
+                .andExpect(jsonPath("$.message", is("user")))
+                .andExpect(jsonPath("$.data.id", is(1)))
+                .andExpect(jsonPath("$.data.firstName", is("Bang")))
+                .andExpect(jsonPath("$.data.lastName", is("IT")))
+                .andExpect(jsonPath("$.data.email", is("candyyeukoi10@gmail.com")));
     }
 }
