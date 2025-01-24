@@ -3,6 +3,7 @@ package com.bang.WebBanHang_Project.controller;
 import com.bang.WebBanHang_Project.controller.request.UserCreationRequest;
 import com.bang.WebBanHang_Project.controller.request.UserPasswordRequest;
 import com.bang.WebBanHang_Project.controller.request.UserUpdateRequest;
+import com.bang.WebBanHang_Project.controller.response.ApiResponse;
 import com.bang.WebBanHang_Project.controller.response.UserResponse;
 import com.bang.WebBanHang_Project.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,18 +32,18 @@ public class UserController {
     @Operation(summary = "Get user list", description = "API retrieve user from database")
     @GetMapping("/list")
     @PreAuthorize("hasAnyAuthority('admin', 'manager')")
-    public Map<String, Object> getList(@RequestParam(required = false) String keyword,
-                                       @RequestParam(required = false) String sort,
-                                       @RequestParam(defaultValue = "0") int page,
-                                       @RequestParam(defaultValue = "20") int size) {
+    public ApiResponse getList(@RequestParam(required = false) String keyword,
+                               @RequestParam(required = false) String sort,
+                               @RequestParam(defaultValue = "0") int page,
+                               @RequestParam(defaultValue = "20") int size) {
         log.info("Get user list");
 
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("status", HttpStatus.OK.value());
-        result.put("message", "user list");
-        result.put("data", userService.findAll(keyword, sort, page, size));
 
-        return result;
+        return ApiResponse.builder()
+                .status(HttpStatus.OK.value())
+                .message("user list")
+                .data(userService.findAll(keyword, sort, page, size))
+                .build();
     }
 
     @Operation(summary = "Get user detail", description = "API retrieve user detail by ID from database")
