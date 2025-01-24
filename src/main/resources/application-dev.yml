@@ -17,8 +17,8 @@ spring:
       ddl-auto: none
   sendgrid:
     apiKey: ${SENDGRID_API_KEY}
-    fromEmail: quoctay87@gmail.com
-    templateId: d-2116466afd0a438b90615184dd569e42
+    fromEmail: candyyeukoi10@gmail.com
+    templateId: d-9a73652658ad43afb6b6c1ead33dc64f
     verificationLink: http://localhost:8080/user/confirm-email
 # application-dev.yml
 springdoc:
@@ -35,3 +35,7 @@ openapi:
 
 jwt:
   secretKey: abc@123
+  expiryMinutes: 60
+  expiryDay: 14
+  accessKey: peWSn9r50nTAGGq7VgxAtotK035+lqFr5VzoQfjR6vc=
+  refreshKey: zFmztGev7DOSya/6FDXl11q8yowVowgEsGanPVPN7G0=
