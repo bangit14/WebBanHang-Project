@@ -45,7 +45,6 @@ public class UserServiceImpl implements UserService {
     public UserPageResponse findAll(String keyword, String sort, int page, int size) {
         log.info("findAll start");
 
-        // Sorting
         Sort.Order order = new Sort.Order(Sort.Direction.ASC, "id");
         if (StringUtils.hasLength(sort)) {
             Pattern pattern = Pattern.compile("(\\w+?)(:)(.*)");
@@ -65,7 +64,6 @@ public class UserServiceImpl implements UserService {
             pageNo = page - 1;
         }
 
-        // Paging
         Pageable pageable = PageRequest.of(pageNo, size, Sort.by(order));
         Page<UserEntity> entityPage;
 
@@ -127,11 +125,12 @@ public class UserServiceImpl implements UserService {
         user.setUsername(req.getUsername());
         user.setType(req.getType());
         user.setStatus(UserStatus.NONE);
-        userRepository.save(user);
+
+        UserEntity result = userRepository.save(user);
         log.info("Saved user: {}", user);
 
-        if (user.getId() != null) {
-            log.info("user id: {}", user.getId());
+        if (result.getId() != null) {
+            log.info("user id: {}", result.getId());
             List<AddressEntity> addresses = new ArrayList<>();
             req.getAddresses().forEach(address -> {
                 AddressEntity addressEntity = new AddressEntity();
@@ -143,7 +142,7 @@ public class UserServiceImpl implements UserService {
                 addressEntity.setCity(address.getCity());
                 addressEntity.setCountry(address.getCountry());
                 addressEntity.setAddressType(address.getAddressType());
-                addressEntity.setUserId(user.getId());
+                addressEntity.setUserId(result.getId());
                 addresses.add(addressEntity);
             });
             addressRepository.saveAll(addresses);
@@ -156,7 +155,7 @@ public class UserServiceImpl implements UserService {
             throw new InvalidDataException("Send email failed");
         }
 
-        return user.getId();
+        return result.getId();
     }
 
 
@@ -230,24 +229,12 @@ public class UserServiceImpl implements UserService {
         log.info("Deleted user id: {}", id);
     }
 
-    /**
-     * Get user by id
-     *
-     * @param id
-     * @return
-     */
+
     private UserEntity getUserEntity(Long id) {
         return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
-    /**
-     * Convert EserEntities to UserResponse
-     *
-     * @param page
-     * @param size
-     * @param userEntities
-     * @return
-     */
+
     private static UserPageResponse getUserPageResponse(int page, int size, Page<UserEntity> userEntities) {
         log.info("Convert User Entity Page");
 
