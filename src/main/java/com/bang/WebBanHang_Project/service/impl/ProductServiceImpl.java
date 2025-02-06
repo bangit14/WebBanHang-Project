@@ -2,6 +2,7 @@ package com.bang.WebBanHang_Project.service.impl;
 
 import com.bang.WebBanHang_Project.controller.request.ProductCreationRequest;
 import com.bang.WebBanHang_Project.controller.request.ProductUpdateRequest;
+import com.bang.WebBanHang_Project.exception.InvalidDataException;
 import com.bang.WebBanHang_Project.exception.ResourceNotFoundException;
 import com.bang.WebBanHang_Project.model.Category;
 import com.bang.WebBanHang_Project.model.ProductEntity;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j(topic = "PRODUCT-SERVICE")
@@ -32,40 +34,48 @@ public class ProductServiceImpl implements ProductService {
     public long createProduct(ProductCreationRequest request) {
         log.info("Create Product: {}", request);
 
+        if(productRepository.existsById(request.getId())){
+            throw new InvalidDataException("Product already exists");
+        }
 
-        Category category = categoryRepository.findById(request.getCategory().getId())
-                .orElseGet(() -> {
-                    Category newCategory = new Category();
-                    newCategory.setId(request.getCategory().getId());
-                    newCategory.setName(request.getCategory().getName());
-                    return categoryRepository.save(newCategory);
-                });
-        log.info("Saved category: {}", request.getCategory());
+        ProductEntity product = new ProductEntity();
+        product.setId(request.getId());
+        product.setName(request.getName());
 
-        List<ProductEntity> productList = new ArrayList<>();
-        request.getUnits().forEach(unit -> {
-            ProductEntity product = new ProductEntity();
-            product.setName(request.getName());
-            product.setCategory(request.getCategory());
-            product.setUnit(unit.getId());
-            productList.add(product);
-        });
+        Category newCategory = new Category();
+        newCategory.setName(request.getCategory().getName());
+        newCategory.setDescription(request.getCategory().getDescription());
 
-        log.info("product id: {}", request.getId());
-        List<Unit> unitList = new ArrayList<>();
-        request.getUnits().forEach(unit -> {
-            Unit unitEntity = new Unit();
-            unitEntity.setId(unit.getId());
-            unitEntity.setName(unit.getName());
-            unitEntity.setDescription(unit.getDescription());
-            unitList.add(unitEntity);
-        });
-        unitRepository.saveAll(unitList);
-        log.info("Saved units: {}", unitList);
+        if(!categoryRepository.existsById(request.getCategory().getId())){
+            categoryRepository.save(newCategory);
+            log.info("Saved category: {}", newCategory);
+        }
 
-        productRepository.saveAll(productList);
-        log.info("Saved product :{}", productList);
-        return productList.get(0).getId();
+        product.setCategory(newCategory);
+        log.info("Saved product: {}", product);
+
+        if(product.getId() != null){
+            List<Unit> unitList = new ArrayList<>();
+            request.getUnits().forEach(unit -> {
+                Unit unitEntity = new Unit();
+                unitEntity.setId(unit.getId());
+                unitEntity.setName(unit.getName());
+                unitEntity.setSymbol(unit.getSymbol());
+                if(!unitRepository.existsById(unit.getId())){
+                    unitList.add(unitEntity);
+                }
+            });
+
+            if(!unitList.isEmpty()){
+                unitRepository.saveAll(unitList);
+            }
+
+            product.setUnits(unitList);
+//            productRepository.save(product);
+//            log.info("Saved product: {}", product);
+        }
+
+        return product.getId();
     }
 
     @Override
