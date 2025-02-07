@@ -15,6 +15,6 @@ public class ProductUpdateRequest {
 
     private Long id;
     private String name;
-    private Category category;
-    private List<Unit> units;
+    private CategoryCreation category;
+    private List<UnitCreation> units;
 }

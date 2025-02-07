@@ -25,7 +25,7 @@ public class ProductEntity extends AbstractEntity<Long> implements Serializable 
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    @ManyToMany
+    @ManyToMany(cascade = {CascadeType.PERSIST,CascadeType.MERGE})
     @JoinTable(
             name = "product_units",
             joinColumns = @JoinColumn(name = "product_id"),

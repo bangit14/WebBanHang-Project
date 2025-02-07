@@ -125,6 +125,6 @@ public class UserController {
         return ApiResponse.builder()
                 .status(HttpStatus.RESET_CONTENT.value())
                 .message("User deleted successfully")
-                .data( "").build();
+                .data("").build();
     }
 }
