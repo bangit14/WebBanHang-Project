@@ -1,26 +1,36 @@
 package com.bang.WebBanHang_Project.service.impl;
 
+import com.bang.WebBanHang_Project.controller.request.InventoryCreationRequest;
+import com.bang.WebBanHang_Project.controller.request.InventoryUpdateRequest;
 import com.bang.WebBanHang_Project.controller.request.ProductCreationRequest;
 import com.bang.WebBanHang_Project.controller.request.ProductUpdateRequest;
-import com.bang.WebBanHang_Project.controller.response.ProductPageResponse;
-import com.bang.WebBanHang_Project.controller.response.ProductResponse;
+import com.bang.WebBanHang_Project.controller.response.*;
 import com.bang.WebBanHang_Project.exception.InvalidDataException;
 import com.bang.WebBanHang_Project.exception.ResourceNotFoundException;
 import com.bang.WebBanHang_Project.model.Category;
+import com.bang.WebBanHang_Project.model.Inventory;
 import com.bang.WebBanHang_Project.model.ProductEntity;
 import com.bang.WebBanHang_Project.model.Unit;
 import com.bang.WebBanHang_Project.repository.CategoryRepository;
+import com.bang.WebBanHang_Project.repository.InventoryRepository;
 import com.bang.WebBanHang_Project.repository.ProductRepository;
 import com.bang.WebBanHang_Project.repository.UnitRepository;
 import com.bang.WebBanHang_Project.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j(topic = "PRODUCT-SERVICE")
@@ -35,9 +45,36 @@ public class ProductServiceImpl implements ProductService {
     public ProductPageResponse findAll(String keyword, String sort, int page, int size) {
         log.info("findAll start");
 
+        Sort.Order order = new Sort.Order(Sort.Direction.ASC,"id");
+        if(StringUtils.hasLength(sort)){
+            Pattern pattern = Pattern.compile("(\\w+?)(:)(.*)");
+            Matcher matcher = pattern.matcher(sort);
+            if (matcher.find()){
+                String columnName = matcher.group(1);
+                if (matcher.group(3).equalsIgnoreCase("asc")){
+                    order = new Sort.Order(Sort.Direction.ASC,columnName);
+                } else {
+                    order = new Sort.Order(Sort.Direction.DESC,columnName);
+                }
+            }
+        }
 
+        int pageNo = 0;
+        if(page > 0){
+            pageNo = page - 1;
+        }
 
-        return null;
+        Pageable pageable = PageRequest.of(pageNo,size,Sort.by(order));
+        Page<ProductEntity> entityPage;
+
+        if (StringUtils.hasLength(keyword)){
+            keyword = "%" + keyword.toLowerCase() + "%";
+            entityPage = productRepository.searchByKeyword(keyword,pageable);
+        } else {
+            entityPage = productRepository.findAll(pageable);
+        }
+
+        return getProductPageResponse(page,size,entityPage);
     }
 
     @Override
@@ -46,11 +83,24 @@ public class ProductServiceImpl implements ProductService {
 
         ProductEntity productEntity = getProductEntity(id);
 
+        CategoryResponse categoryResponse = new CategoryResponse();
+        categoryResponse.setName(productEntity.getCategory().getName());
+        categoryResponse.setDescription(productEntity.getCategory().getDescription());
+
+        List<UnitResponse> unitResponses = new ArrayList<>();
+        productEntity.getUnits().forEach(unit -> {
+            UnitResponse unitResponse = new UnitResponse();
+            unitResponse.setName(unit.getName());
+            unitResponse.setSymbol(unit.getSymbol());
+            unitResponses.add(unitResponse);
+        });
+
         return ProductResponse.builder()
                 .id(id)
                 .name(productEntity.getName())
-                .category(productEntity.getName())
-                .units(productEntity.getUnits()).build();
+                .sku(productEntity.getSku())
+                .category(categoryResponse)
+                .units(unitResponses).build();
     }
 
     @Override
@@ -65,6 +115,8 @@ public class ProductServiceImpl implements ProductService {
 
         ProductEntity product = new ProductEntity();
         product.setName(request.getName());
+        product.setSku(request.getSku());
+        product.setPrice(request.getPrice());
 
         Category categoryByName = categoryRepository.findByName(request.getCategory().getName());
         if(categoryByName != null){
@@ -114,6 +166,8 @@ public class ProductServiceImpl implements ProductService {
 
         ProductEntity product = getProductEntity(request.getId());
         product.setName(request.getName());
+        product.setSku(request.getSku());
+        product.setPrice(request.getPrice());
 
         Category categoryByName = categoryRepository.findByName(request.getCategory().getName());
         if(categoryByName != null){
@@ -157,7 +211,44 @@ public class ProductServiceImpl implements ProductService {
         return productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Product not found"));
     }
 
-    private Category getCategory(Long id){
-        return categoryRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+    private static ProductPageResponse getProductPageResponse(int page, int size, Page<ProductEntity> productEntities){
+        log.info("Convert Product Entity Page");
+
+        List<ProductResponse> productList = productEntities.stream().map(entity -> ProductResponse.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .sku(entity.getSku())
+                .price(entity.getPrice())
+                .category(getCategoryResponse(entity.getCategory()))
+                .units(getUnitResponseList(entity.getUnits()))
+                .build()
+        ).toList();
+
+        ProductPageResponse response = new ProductPageResponse();
+        response.setPageNumber(page);
+        response.setPageSize(size);
+        response.setTotalElements(productEntities.getTotalElements());
+        response.setTotalPages(productEntities.getTotalPages());
+        response.setProductList(productList);
+
+        return response;
+    }
+
+    private static CategoryResponse getCategoryResponse(Category category){
+        log.info("Convert category Entity");
+
+        CategoryResponse categoryResponse = new CategoryResponse();
+        categoryResponse.setName(category.getName());
+        categoryResponse.setDescription(category.getDescription());
+        return categoryResponse;
+    }
+
+    private static List<UnitResponse> getUnitResponseList(List<Unit> units){
+        log.info("Convert Unit Entity List");
+
+        return units.stream().map(unit -> UnitResponse.builder()
+                .name(unit.getName())
+                .symbol(unit.getSymbol())
+                .build()).toList();
     }
 }

@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Getter
@@ -16,6 +17,8 @@ public class ProductCreationRequest {
 
     private Long id;
     private String name;
+    private String sku;
+    private BigDecimal price;
     private CategoryCreation category;
     private List<UnitCreation> units;
 

@@ -1,5 +1,6 @@
 package com.bang.WebBanHang_Project.controller;
 
+import com.bang.WebBanHang_Project.controller.request.InventoryUpdateRequest;
 import com.bang.WebBanHang_Project.controller.request.ProductCreationRequest;
 import com.bang.WebBanHang_Project.controller.request.ProductUpdateRequest;
 import com.bang.WebBanHang_Project.controller.response.ApiResponse;
@@ -9,13 +10,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/product")
@@ -27,7 +24,7 @@ public class ProductController {
 
     private final ProductService productService;
 
-    @Operation(summary = "Create Product", description = "API add new product to database")
+    @Operation(summary = "Get Product", description = "API get product by id from to database")
     @GetMapping("/{productId}")
     public ApiResponse getProductDetail(@PathVariable Long productId){
         log.info("Get product detail by ID: {}", productId);
@@ -39,9 +36,10 @@ public class ProductController {
     }
 
 
+
     @Operation(summary = "Create Product", description = "API add new product to database")
     @PostMapping("/create")
-    public ApiResponse createUser(@RequestBody ProductCreationRequest request){
+    public ApiResponse createProduct(@RequestBody ProductCreationRequest request){
         log.info("Create Product: {}", request);
 
         return ApiResponse.builder()
@@ -64,7 +62,7 @@ public class ProductController {
     }
 
     @Operation(summary = "Delete Product", description = "API delete product")
-    @PutMapping("/del")
+    @DeleteMapping("/del")
     public ApiResponse deleteProduct(@PathVariable Long productId){
         log.info("Deleting product: {}", productId);
 

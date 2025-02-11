@@ -1,18 +1,16 @@
 package com.bang.WebBanHang_Project.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "tbl_inventory")
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Inventory extends AbstractEntity<Long>{
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -20,10 +18,17 @@ public class Inventory extends AbstractEntity<Long>{
     private ProductEntity product;
 
     @Column(name = "quantity",nullable = false)
-    private Integer quantity;
+    private Long quantity;
 
     @Column(name = "location")
     private String location;
 
+    @Column(name = "notes")
+    private String notes;
 
+    @Column(name = "discount")
+    private Long discount;
+
+    @Column(name = "status")
+    private String status;
 }

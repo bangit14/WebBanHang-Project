@@ -1,16 +1,12 @@
 package com.bang.WebBanHang_Project.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Set;
 
 @Entity
 @Getter
@@ -20,6 +16,12 @@ public class ProductEntity extends AbstractEntity<Long> implements Serializable 
 
     @Column(name = "name")
     private String name;
+
+    @Column(name = "sku",unique = true)
+    private String sku;
+
+    @Column(name = "price", precision = 19, scale = 3)
+    private BigDecimal price;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
