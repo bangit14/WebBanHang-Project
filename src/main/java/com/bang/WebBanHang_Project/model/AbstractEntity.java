@@ -7,7 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -22,11 +22,11 @@ public class AbstractEntity<T> implements Serializable {
     @Column(name = "created_at", length = 255)
     @Temporal(TemporalType.TIMESTAMP)
     @CreationTimestamp
-    private Date createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_at", length = 255)
     @Temporal(TemporalType.TIMESTAMP)
     @UpdateTimestamp
-    private Date updatedAt;
+    private LocalDateTime updatedAt;
 
 }

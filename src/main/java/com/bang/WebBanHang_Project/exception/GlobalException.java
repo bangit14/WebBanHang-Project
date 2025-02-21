@@ -217,6 +217,44 @@ public class GlobalException {
         return errorResponse;
     }
 
+    /**
+     * Handle exception when the data is duplicated
+     *
+     * @param e
+     * @param request
+     * @return
+     */
+    @ExceptionHandler(DuplicateResourceException.class)
+    @ResponseStatus(CONFLICT)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "409", description = "Conflict",
+                    content = {@Content(mediaType = APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    name = "409 Response",
+                                    summary = "Handle exception when resource already exists",
+                                    value = """
+                                            {
+                                              "timestamp": "2023-10-19T06:07:35.321+00:00",
+                                              "status": 409,
+                                              "path": "/api/v1/...",
+                                              "error": "Conflict",
+                                              "message": "Resource already exists with field: 'value'"
+                                            }
+                                            """
+                            ))})
+    })
+    public ErrorResponse handleDuplicateResourceException(DuplicateResourceException e, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(new Date());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+        errorResponse.setStatus(CONFLICT.value());
+        errorResponse.setError(CONFLICT.getReasonPhrase());
+        errorResponse.setMessage(e.getMessage());
+
+        return errorResponse;
+    }
+
+
     @Getter
     @Setter
     private class ErrorResponse {
@@ -225,5 +263,42 @@ public class GlobalException {
         private String path;
         private String error;
         private String message;
+    }
+
+    /**
+     * Handle exception when inventory is insufficient
+     *
+     * @param e
+     * @param request
+     * @return error
+     */
+    @ExceptionHandler(InsufficientInventoryException.class)
+    @ResponseStatus(BAD_REQUEST)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "400", description = "Insufficient Inventory",
+                    content = {@Content(mediaType = APPLICATION_JSON_VALUE,
+                            examples = @ExampleObject(
+                                    name = "400 Response",
+                                    summary = "Handle exception when inventory is insufficient",
+                                    value = """
+                                            {
+                                              "timestamp": "2023-10-19T06:35:52.333+00:00",
+                                              "status": 400,
+                                              "path": "/api/v1/...",
+                                              "error": "Bad Request",
+                                              "message": "Insufficient inventory for product: 1"
+                                            }
+                                            """
+                            ))})
+    })
+    public ErrorResponse handleInsufficientInventoryException(InsufficientInventoryException e, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(new Date());
+        errorResponse.setPath(request.getDescription(false).replace("uri=", ""));
+        errorResponse.setStatus(BAD_REQUEST.value());
+        errorResponse.setError(BAD_REQUEST.getReasonPhrase());
+        errorResponse.setMessage(e.getMessage());
+
+        return errorResponse;
     }
 }

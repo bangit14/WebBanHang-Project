@@ -73,6 +73,40 @@ public class InventoryServiceImpl implements InventoryService {
         log.info("Updated Inventory");
     }
 
+    @Override
+    public boolean checkAvailability(Long productId, Long quantity) {
+        log.info("Checking product in stock");
+
+        Inventory inventory = inventoryRepository.findByProductId(productId);
+
+        return inventory != null && inventory.getQuantity() >= quantity;
+    }
+
+    @Override
+    public boolean reserveStock(Long productId, Long quantity) {
+        log.info("Reserve product in stock");
+
+        Inventory inventory = inventoryRepository.findByProductId(productId);
+        if (inventory != null && inventory.getQuantity() >= quantity){
+            inventory.setQuantity(inventory.getQuantity()-quantity);
+            inventoryRepository.save(inventory);
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    public void releaseStock(Long productId, Long quantity) {
+        log.info("Release product in stock");
+
+        Inventory inventory = inventoryRepository.findByProductId(productId);
+        if(inventory != null){
+            inventory.setQuantity(inventory.getQuantity() + quantity);
+            inventoryRepository.save(inventory);
+        }
+    }
+
     private Inventory getInventoryById(Long id){
         return inventoryRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Inventory not found"));
     }

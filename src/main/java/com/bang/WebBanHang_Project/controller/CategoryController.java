@@ -1,5 +1,7 @@
 package com.bang.WebBanHang_Project.controller;
 
+import com.bang.WebBanHang_Project.controller.request.CategoryAttributeRequest;
+import com.bang.WebBanHang_Project.controller.request.CategoryAttributeUpdate;
 import com.bang.WebBanHang_Project.controller.request.CategoryCreation;
 import com.bang.WebBanHang_Project.controller.request.CategoryUpdate;
 import com.bang.WebBanHang_Project.controller.response.ApiResponse;
@@ -8,6 +10,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -78,6 +82,54 @@ public class CategoryController {
         return ApiResponse.builder()
                 .status(HttpStatus.NO_CONTENT.value())
                 .message("Category deleted successfully")
+                .data("").build();
+    }
+
+    @Operation(summary = "Get attribute list", description = "API get attributeList from database")
+    @GetMapping("/list")
+    public ApiResponse getAttributeList(@PathVariable Long categoryId, @RequestBody Pageable pageable){
+        log.info("Get attributeList");
+
+        return ApiResponse.builder()
+                .status(HttpStatus.OK.value())
+                .message("Attribute List")
+                .data(categoryService.getCategoryAttribute(categoryId,pageable)).build();
+    }
+
+    @Operation(summary = "Create CategoryAttribute", description = "API add new attribute to category")
+    @PostMapping("/{categoryId}/addAttribute")
+    public ApiResponse addAttribute(@PathVariable Long categoryId,@RequestBody CategoryAttributeRequest request){
+        log.info("Add category attribute");
+
+        return ApiResponse.builder()
+                .status(HttpStatus.CREATED.value())
+                .message("CategoryAttribute added successfully")
+                .data(categoryService.addAttribute(categoryId,request)).build();
+    }
+
+    @Operation(summary = "Update CategoryAttribute", description = "API update categoryAttribute")
+    @PutMapping("/updateAttribute")
+    public ApiResponse updateAttribute(@RequestBody CategoryAttributeUpdate request){
+        log.info("Update Attribute");
+
+        categoryService.updateAttribute(request);
+
+        return ApiResponse.builder()
+                .status(HttpStatus.ACCEPTED.value())
+                .message("Attribute updated successfully")
+                .data("").build();
+    }
+
+    @Operation(summary = "Delete CategoryAttribute", description = "API delete attribute")
+    @DeleteMapping("/{categoryId}/delAttribute")
+    public ApiResponse deleteAttribute(@PathVariable Long categoryId){
+        log.info("Delete Attribute");
+
+        categoryService.deleteAttribute(categoryId);
+
+        return ApiResponse.builder()
+                .status(HttpStatus.NO_CONTENT.value())
+                .message("Attribute deleted successfully")
                 .data("").build();
     }
 }

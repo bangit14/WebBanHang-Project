@@ -12,4 +12,9 @@ public interface InventoryService {
 
     void updateInventory(InventoryUpdateRequest request);
 
+    boolean checkAvailability(Long productId, Long quantity);
+
+    boolean reserveStock(Long productId, Long quantity);
+
+    void releaseStock(Long productId, Long quantity);
 }
