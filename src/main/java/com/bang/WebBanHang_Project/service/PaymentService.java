@@ -10,15 +10,15 @@ public interface PaymentService {
 
     PaymentResponse processPayment(PaymentRequest paymentRequest);
 
-    void refundPayment(String paymentId);
+    void refundPayment(Long paymentId);
 
-    PaymentStatus checkPaymentStatus(String paymentId);
+    PaymentStatus checkPaymentStatus(Long paymentId);
 
     PaymentProviderType getProviderType();
 
-    String createPaymentRecord(PaymentRequest paymentRequest);
+    Long createPaymentRecord(PaymentRequest paymentRequest);
 
     void updatePaymentRecord(PaymentUpdateRequest paymentUpdateRequest);
 
-    void deletePaymentRecord(String paymentId);
+    void deletePaymentRecord(Long paymentId);
 }

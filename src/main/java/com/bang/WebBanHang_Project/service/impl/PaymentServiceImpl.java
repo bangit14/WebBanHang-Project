@@ -78,10 +78,11 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public void refundPayment(String paymentId) {
+    public void refundPayment(Long paymentId) {
         log.info("Processing refund for payment: {}", paymentId);
 
-        Payment payment = paymentRepository.findById(paymentId);
+        Payment payment = paymentRepository.findById(paymentId).orElseThrow(
+                () -> new ResourceNotFoundException("Payment not found"));
 
         if(!canRefund(payment)){
             throw new RefundNotAllowedException("Payment cannot be refunded in current status: " + payment.getStatus());
@@ -116,10 +117,11 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public PaymentStatus checkPaymentStatus(String paymentId) {
+    public PaymentStatus checkPaymentStatus(Long paymentId) {
         log.debug("Checking payment status for: {}", paymentId);
 
-        Payment payment = paymentRepository.findById(paymentId);
+        Payment payment = paymentRepository.findById(paymentId).orElseThrow(
+                () -> new ResourceNotFoundException("Payment not found"));
 
         PaymentGatewayStatus gatewayStatus = paymentGatewayClient.checkStatus(payment.getGatewayTransactionId());
         PaymentStatus currentStatus = mapGatewayStatus(gatewayStatus);
@@ -138,7 +140,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public String createPaymentRecord(PaymentRequest paymentRequest) {
+    public Long createPaymentRecord(PaymentRequest paymentRequest) {
         log.info("Creating a Payment record");
 
         Payment payment = new Payment();
@@ -157,7 +159,8 @@ public class PaymentServiceImpl implements PaymentService {
     public void updatePaymentRecord(PaymentUpdateRequest request) {
         log.info("Updating a payment record");
 
-        Payment payment = paymentRepository.findById(request.getId());
+        Payment payment = paymentRepository.findById(request.getId()).orElseThrow(
+                () -> new ResourceNotFoundException("Payment not found"));
         payment.setOrderId(request.getOrderId());
         payment.setAmount(request.getAmount());
         payment.setCurrency(request.getCurrency());
@@ -168,10 +171,11 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public void deletePaymentRecord(String paymentId) {
+    public void deletePaymentRecord(Long paymentId) {
         log.info("Deleting a payment record");
 
-        Payment payment = paymentRepository.findById(paymentId);
+        Payment payment = paymentRepository.findById(paymentId).orElseThrow(
+                () -> new ResourceNotFoundException("Payment not found"));
 
         if (payment != null){
             paymentRepository.delete(payment);

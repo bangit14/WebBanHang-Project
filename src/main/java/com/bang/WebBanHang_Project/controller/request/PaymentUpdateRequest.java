@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 public class PaymentUpdateRequest {
-    private String id;
+    private Long id;
     private String orderId;
     private BigDecimal amount;
     private String currency;

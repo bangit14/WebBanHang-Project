@@ -1,6 +1,7 @@
 package com.bang.WebBanHang_Project.controller.request;
 
 import com.bang.WebBanHang_Project.common.OrderStatus;
+import com.bang.WebBanHang_Project.common.PaymentMethod;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,6 +15,6 @@ public class OrderRequest {
     private BigDecimal totalAmount;
     private OrderStatus status;
     private String shippingAddress;
-    private String paymentMethod;
+    private PaymentMethod paymentMethod;
     private List<OrderItemRequest> orderItem;
 }

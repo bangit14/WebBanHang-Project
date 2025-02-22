@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Payment extends AbstractEntity<String> {
+public class Payment extends AbstractEntity<Long> {
 
     @Column(name = "order_id")
     private String orderId;

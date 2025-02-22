@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 @Setter
 @Builder
 public class PaymentRequest {
-    private String id;
+    private Long id;
     private String orderId;
     private BigDecimal amount;
     private String currency;

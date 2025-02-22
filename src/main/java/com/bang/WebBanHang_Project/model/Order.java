@@ -1,6 +1,7 @@
 package com.bang.WebBanHang_Project.model;
 
 import com.bang.WebBanHang_Project.common.OrderStatus;
+import com.bang.WebBanHang_Project.common.PaymentMethod;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -37,10 +38,10 @@ public class Order extends AbstractEntity<Long>{
     private String shippingAddress;
 
     @Column(name = "payment_id")
-    private String paymentId;
+    private Long paymentId;
 
     @Column(name = "payment_method")
-    private String paymentMethod;
+    private PaymentMethod paymentMethod;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderItem> orderItems = new ArrayList<>();

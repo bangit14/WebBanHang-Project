@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 public class RefundRequest {
     private String orderId;
-    private String paymentId;
+    private Long paymentId;
     private BigDecimal amount;
     private String reason;
     private RefundStatus status;

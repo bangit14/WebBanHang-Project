@@ -15,9 +15,8 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Builder
-public class Refund {
-    private String id;
-    private String paymentId;
+public class Refund extends AbstractEntity<Long> {
+    private Long paymentId;
     private BigDecimal amount;
     private RefundStatus status;
     private String gatewayRefundId;

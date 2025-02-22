@@ -1,6 +1,7 @@
 package com.bang.WebBanHang_Project.controller.response;
 
 import com.bang.WebBanHang_Project.common.OrderStatus;
+import com.bang.WebBanHang_Project.common.PaymentMethod;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -18,6 +19,6 @@ public class OrderResponse {
     private BigDecimal totalAmount;
     private OrderStatus status;
     private String shippingAddress;
-    private String paymentMethod;
+    private PaymentMethod paymentMethod;
     private List<OrderItemResponse> orderItem;
 }
