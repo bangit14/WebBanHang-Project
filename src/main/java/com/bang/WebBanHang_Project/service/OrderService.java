@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface OrderService {
 
-    long createOrder(OrderRequest orderRequest);
+    String createOrder(OrderRequest orderRequest);
 
     OrderResponse getOrder(Long orderId);
 

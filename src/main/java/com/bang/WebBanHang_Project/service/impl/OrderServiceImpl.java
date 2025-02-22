@@ -5,6 +5,8 @@ import com.bang.WebBanHang_Project.common.PaymentStatus;
 import com.bang.WebBanHang_Project.common.RefundStatus;
 import com.bang.WebBanHang_Project.controller.request.OrderItemRequest;
 import com.bang.WebBanHang_Project.controller.request.OrderRequest;
+import com.bang.WebBanHang_Project.controller.request.RefundRequest;
+import com.bang.WebBanHang_Project.controller.response.OrderItemResponse;
 import com.bang.WebBanHang_Project.controller.response.OrderResponse;
 import com.bang.WebBanHang_Project.exception.InsufficientInventoryException;
 import com.bang.WebBanHang_Project.exception.InventoryServiceException;
@@ -13,6 +15,7 @@ import com.bang.WebBanHang_Project.exception.ResourceNotFoundException;
 import com.bang.WebBanHang_Project.model.Order;
 import com.bang.WebBanHang_Project.model.OrderItem;
 import com.bang.WebBanHang_Project.model.ProductEntity;
+import com.bang.WebBanHang_Project.repository.OrderItemRepository;
 import com.bang.WebBanHang_Project.repository.OrderRepository;
 import com.bang.WebBanHang_Project.repository.ProductRepository;
 import com.bang.WebBanHang_Project.service.InventoryService;
@@ -40,10 +43,11 @@ public class OrderServiceImpl implements OrderService {
     private final InventoryService inventoryService;
     private final ProductRepository productRepository;
     private final PaymentService paymentService;
+    private final OrderItemRepository orderItemRepository;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public long createOrder(OrderRequest orderRequest) {
+    public String createOrder(OrderRequest orderRequest) {
         try{
 
             validateOrderRequest(orderRequest);
@@ -72,17 +76,41 @@ public class OrderServiceImpl implements OrderService {
 
 //            processPayment(order);
 
-            return order.getId();
+            return order.getId().toString();
 
         } catch (Exception e){
             log.error("Error creating order: ", e);
         }
-        return 0;
+        return "0";
     }
 
     @Override
     public OrderResponse getOrder(Long orderId) {
-        return null;
+        log.info("Get Order by orderId");
+
+        Order order = orderRepository.findById(orderId).orElseThrow(
+                () -> new ResourceNotFoundException("Order not found")
+        );
+
+        OrderResponse orderResponse = new OrderResponse();
+        orderResponse.setUserId(order.getUserId());
+        orderResponse.setStatus(order.getStatus());
+        orderResponse.setOrderDate(order.getOrderDate());
+        orderResponse.setShippingAddress(order.getShippingAddress());
+        orderResponse.setTotalAmount(order.getTotalAmount());
+        orderResponse.setPaymentMethod(order.getPaymentMethod());
+
+        List<OrderItemResponse> orderItemResponseList = order.getOrderItems().stream().map(
+                orderItem -> OrderItemResponse.builder()
+                        .productId(orderItem.getProductId())
+                        .price(orderItem.getPrice())
+                        .quantity(orderItem.getQuantity())
+                        .subtotal(orderItem.getSubtotal()).build()
+                ).toList();
+
+        orderResponse.setOrderItem(orderItemResponseList);
+
+        return orderResponse;
     }
 
     @Override
@@ -137,16 +165,43 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public void addOrderItem(Long orderId, OrderItemRequest request) {
+        log.info("Add orderItem to order");
 
+        Order order = orderRepository.findById(orderId).orElseThrow(
+                () -> new ResourceNotFoundException("Order not found"));
+
+        OrderItem orderItem = new OrderItem();
+        orderItem.setProductId(request.getProductId());
+        orderItem.setQuantity(request.getQuantity());
+        orderItem.setPrice(request.getPrice());
+        orderItem.setSubtotal(request.getSubtotal());
+        orderItemRepository.save(orderItem);
+
+        List<OrderItem> itemList = order.getOrderItems();
+        itemList.add(orderItem);
+        order.setOrderItems(itemList);
+        orderRepository.save(order);
     }
 
     @Override
     public void removeOrderItem(Long orderId, Long itemId) {
+        log.info("Remove orderItem");
 
+        Order order = orderRepository.findById(orderId).orElseThrow(
+                () -> new ResourceNotFoundException("Order not found"));
+
+        OrderItem orderItem = orderItemRepository.findById(itemId).orElseThrow(
+                () -> new ResourceNotFoundException("OrderItem not found"));
+
+        orderItemRepository.delete(orderItem);
+
+        List<OrderItem> itemList = order.getOrderItems();
+        itemList.remove(orderItem);
+        orderRepository.save(order);
     }
 
-    private Order getOrderById(Long orderid){
-        return orderRepository.findById(orderid).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+    private Order getOrderById(Long orderId){
+        return orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
     }
 
     private void validateOrderRequest(OrderRequest orderRequest) throws ValidationException {
@@ -222,9 +277,10 @@ public class OrderServiceImpl implements OrderService {
 
             return paymentStatus == PaymentStatus.COMPLETED ||
                     paymentStatus == PaymentStatus.SETTLED;
-        } catch (PaymentServiceException e) {
+        } catch (Exception e) {
             log.error("Error checking payment status for order: {}", order.getId());
         }
+        return false;
     }
 
     private void refundPayment(Order order){
@@ -240,11 +296,11 @@ public class OrderServiceImpl implements OrderService {
 
             paymentService.refundPayment(order.getPaymentId());
 
-            order.setRefundStatus(RefundStatus.COMPLETED);
-            order.setRefundDate(LocalDateTime.now());
+            refundRequest.setStatus(RefundStatus.COMPLETED);
+            refundRequest.setRefundDate(LocalDateTime.now());
 
             log.info("Successfully processed refund for order: {}", order.getId());
-        } catch (PaymentServiceException e) {
+        } catch (Exception e) {
             log.error("Failed to process refund for order: {}", order.getId());
         }
     }

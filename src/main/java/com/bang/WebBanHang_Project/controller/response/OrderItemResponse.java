@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 @Builder
 public class OrderItemResponse {
     private Long productId;
-    private Integer quantity;
+    private Long quantity;
     private BigDecimal price;
     private BigDecimal subtotal;
 }
