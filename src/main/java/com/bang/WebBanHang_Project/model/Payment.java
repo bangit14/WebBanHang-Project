@@ -2,9 +2,7 @@ package com.bang.WebBanHang_Project.model;
 
 import com.bang.WebBanHang_Project.common.PaymentMethod;
 import com.bang.WebBanHang_Project.common.PaymentStatus;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,9 +28,11 @@ public class Payment extends AbstractEntity<Long> {
     @Column(name = "currency")
     private String currency;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "payment_method")
     private PaymentMethod paymentMethod;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private PaymentStatus status;
 

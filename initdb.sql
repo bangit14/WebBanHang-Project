@@ -3,6 +3,26 @@ CREATE TYPE gender_enum AS ENUM ('MALE', 'FEMALE', 'OTHER');
 CREATE TYPE user_type_enum AS ENUM ('OWNER', 'ADMIN', 'USER');
 CREATE TYPE user_status_enum AS ENUM ('NONE', 'ACTIVE', 'INACTIVE');
 CREATE TYPE payment_method_enum AS ENUM ('MOMO', 'VNPAY');
+create type attribute_type_enum as enum ('TEXT', 'NUMBER', 'SELECT', 'DATE', 'BOOLEAN');
+create type order_status_enum as enum ('PENDING',
+    'CONFIRMED',
+    'PROCESSING',
+    'SHIPPED',
+    'DELIVERED',
+    'CANCELLED',
+    'RETURNED',
+    'FAILED',
+    'REFUNDED',
+    'PAYMENT_PENDING');
+create type payment_status_enum as enum ( 'PENDING',
+    'COMPLETED',
+    'FAILED',
+    'REFUNDED',
+    'SETTLED',
+    'UNKNOWN');
+create type refund_status as enum ('PENDING',
+    'COMPLETED',
+    'FAILED');
 
 
 CREATE TABLE public.tbl_user (
@@ -246,7 +266,7 @@ CREATE TABLE public.tbl_address (
 	CONSTRAINT tbl_address_pkey PRIMARY KEY (id)
 );
 
-INSERT INTO users (id, first_name, last_name, gender, date_of_birth, phone, email, username, password, type, status, created_at, updated_at) VALUES
+INSERT INTO tbl_users (id, first_name, last_name, gender, date_of_birth, phone, email, username, password, type, status, created_at, updated_at) VALUES
 (1, 'Nguyen', 'An', 'MALE', '1990-05-12', '0123456789', 'nguyen.an@email.com', 'nguyenan', 'password123', 'ADMIN', 'ACTIVE', '2024-01-01 10:00:00', '2024-01-01 10:00:00'),
 (2, 'Tran', 'Bich', 'FEMALE', '1992-07-20', '0123456790', 'tran.bich@email.com', 'tranbich', 'password456', 'USER', 'ACTIVE', '2024-01-02 11:00:00', '2024-01-02 11:00:00'),
 (3, 'Le', 'Cao', 'MALE', '1985-10-15', '0123456791', 'le.cao@email.com', 'lecao', 'password789', 'USER', 'INACTIVE', '2024-01-03 12:00:00', '2024-01-03 12:00:00'),
@@ -267,3 +287,48 @@ INSERT INTO users (id, first_name, last_name, gender, date_of_birth, phone, emai
 (18, 'Chau', 'Tung', 'MALE', '1989-08-25', '0123456806', 'chau.tung@email.com', 'chautung', 'password445', 'USER', 'INACTIVE', '2024-01-18 03:00:00', '2024-01-18 03:00:00'),
 (19, 'Nguyen', 'Cuong', 'MALE', '1997-05-05', '0123456807', 'nguyen.cuong@email.com', 'nguyencuong', 'password556', 'USER', 'ACTIVE', '2024-01-19 04:00:00', '2024-01-19 04:00:00'),
 (20, 'Tran', 'Ngoc', 'FEMALE', '1998-12-30', '0123456808', 'tran.ngoc@email.com', 'tranngoc', 'password667', 'ADMIN', 'ACTIVE', '2024-01-20 05:00:00', '2024-01-20 05:00:00');
+
+INSERT INTO tbl_product (id, created_at, updated_at, "name", category_id, price, sku)
+VALUES
+(2, '2024-02-22 10:00:00', '2024-02-22 10:00:00', 'Laptop Gaming ACER', 1, 35999.999, 'LAP-ACER-001'),
+(3, '2024-02-22 10:00:00', '2024-02-22 10:00:00', 'Laptop Gaming ASUS', 1, 25999.999, 'LAP-ASUS-001'),
+(4, '2024-02-22 10:10:00', '2024-02-22 10:10:00', 'Điện thoại iPhone 15', 6, 29999.999, 'IPH-15-002'),
+(5, '2024-02-22 10:20:00', '2024-02-22 10:20:00', 'Chuột Logitech G502', 3, 1499.999, 'MOUSE-LOG-003'),
+(9, '2024-02-22 10:30:00', '2024-02-22 10:30:00', 'Bàn phím cơ Keychron K6', 3, 1999.999, 'KB-K6-004'),
+(10, '2024-02-22 10:40:00', '2024-02-22 10:40:00', 'Màn hình Dell UltraSharp', 4, 5999.999, 'MON-DELL-005');
+
+INSERT INTO tbl_category (id, name, description, created_at, updated_at)
+VALUES
+(3, 'Phụ kiện', 'Chuột, bàn phím, tai nghe, và các phụ kiện khác', '2024-02-22 09:10:00', '2024-02-22 09:10:00'),
+(4, 'Màn hình', 'Màn hình máy tính các loại', '2024-02-22 09:15:00', '2024-02-22 09:15:00'),
+(5, 'Linh kiện', 'Linh kiện PC như CPU, RAM, GPU', '2024-02-22 09:20:00', '2024-02-22 09:20:00'),
+(7, 'Gaming Gear', 'Chuột, bàn phím cơ, tai nghe gaming chuyên dụng', '2024-02-22 09:25:00', '2024-02-22 09:25:00'),
+(9, 'Smartwatch', 'Đồng hồ thông minh từ các thương hiệu nổi tiếng', '2024-02-22 09:30:00', '2024-02-22 09:30:00'),
+(10, 'Máy ảnh', 'Máy ảnh kỹ thuật số, ống kính và phụ kiện', '2024-02-22 09:35:00', '2024-02-22 09:35:00'),
+(2, 'Tivi & Thiết bị âm thanh', 'Các loại tivi, loa, dàn âm thanh cao cấp', '2024-02-22 09:40:00', '2024-02-22 09:40:00'),
+(11, 'Đồ gia dụng', 'Thiết bị nhà bếp, máy hút bụi, quạt, máy lọc không khí', '2024-02-22 09:45:00', '2024-02-22 09:45:00');
+
+INSERT INTO tbl_unit (id, name, symbol, created_at, updated_at)
+VALUES
+(4, 'Bộ', 'bộ', '2024-02-22 10:15:00', '2024-02-22 10:15:00'),
+(6, 'Kilogram', 'kg', '2024-02-22 10:25:00', '2024-02-22 10:25:00'),
+(3, 'Gram', 'g', '2024-02-22 10:30:00', '2024-02-22 10:30:00'),
+(8, 'Lít', 'L', '2024-02-22 10:35:00', '2024-02-22 10:35:00'),
+(9, 'Mililít', 'ml', '2024-02-22 10:40:00', '2024-02-22 10:40:00'),
+(10, 'Mét', 'm', '2024-02-22 10:45:00', '2024-02-22 10:45:00'),
+(11, 'Centimet', 'cm', '2024-02-22 10:50:00', '2024-02-22 10:50:00'),
+(12, 'Milimet', 'mm', '2024-02-22 10:55:00', '2024-02-22 10:55:00');
+
+insert into product_units (product_id,unit_id)
+values (1,1),
+(2,1),
+(3,1),
+(4,1),
+(5,1),
+(5,2),
+(6,1),
+(7,1),
+(8,1),
+(8,2),
+(9,1),
+(10,1);

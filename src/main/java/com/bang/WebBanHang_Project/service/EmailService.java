@@ -41,8 +41,8 @@ public class EmailService {
         Email fromEmail = new Email(from);
         Email toEmail = new Email(to);
 
-        Content content = new Content("text/plain",text);
-        Mail mail = new Mail(fromEmail,subject,toEmail,content);
+        Content content = new Content("text/plain", text);
+        Mail mail = new Mail(fromEmail, subject, toEmail, content);
 
         try {
             Request request = new Request();
@@ -51,7 +51,7 @@ public class EmailService {
             request.setBody(mail.build());
 
             Response response = sendGrid.api(request);
-            if (response.getStatusCode() == 202){
+            if (response.getStatusCode() == 202) {
                 log.info("Email sent successfully");
             } else {
                 log.error("Email sent failed");
@@ -65,7 +65,7 @@ public class EmailService {
     public void verificationEmail(String to, String name) throws IOException {
         log.info("Sending verification email for name={}", name);
 
-        Email fromEmail = new Email(from,"Bang");
+        Email fromEmail = new Email(from, "Bang");
         Email toEmail = new Email(to);
         String subject = " Verification Email";
 
@@ -93,7 +93,7 @@ public class EmailService {
         request.setBody(mail.build());
 
         Response response = sendGrid.api(request);
-        if (response.getStatusCode() == 202){
+        if (response.getStatusCode() == 202) {
             log.info("Verification sent successfully");
         } else {
             log.error("Verification sent failed");

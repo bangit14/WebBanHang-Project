@@ -1,6 +1,7 @@
 package com.bang.WebBanHang_Project.controller;
 
 import com.bang.WebBanHang_Project.common.OrderStatus;
+import com.bang.WebBanHang_Project.controller.request.OrderItemDelRequest;
 import com.bang.WebBanHang_Project.controller.request.OrderItemRequest;
 import com.bang.WebBanHang_Project.controller.request.OrderRequest;
 import com.bang.WebBanHang_Project.controller.response.ApiResponse;
@@ -41,8 +42,8 @@ public class OrderController {
 
         return ApiResponse.builder()
                 .status(HttpStatus.CREATED.value())
-                .data("Product created successfully")
-                .message(orderService.createOrder(request)).build();
+                .message("Order created successfully")
+                .data(orderService.createOrder(request)).build();
     }
 
     @Operation(summary = "Update Order", description = "API update order to database")
@@ -59,7 +60,7 @@ public class OrderController {
     }
 
     @Operation(summary = "Add Item", description = "API add item to order")
-    @PutMapping("/addItem")
+    @PutMapping("/{orderId}/addItem")
     public ApiResponse addItem(@PathVariable Long orderId, @RequestBody OrderItemRequest request){
         log.info("Add item to Order");
 
@@ -73,10 +74,10 @@ public class OrderController {
 
     @Operation(summary = "Remove Item", description = "API remove item to order")
     @PutMapping("/removeItem")
-    public ApiResponse removeItem(@PathVariable Long orderId, @PathVariable Long itemId){
+    public ApiResponse removeItem(@RequestBody OrderItemDelRequest request){
         log.info("Remove item");
 
-        orderService.removeOrderItem(orderId,itemId);
+        orderService.removeOrderItem(request);
 
         return ApiResponse.builder()
                 .status(HttpStatus.ACCEPTED.value())
@@ -85,14 +86,14 @@ public class OrderController {
     }
 
     @Operation(summary = "Cancel Order", description = "API cancel order")
-    @PutMapping("/cancelOrder")
+    @DeleteMapping("/cancel/{orderId}")
     public ApiResponse cancelOrder(@PathVariable Long orderId){
         log.info("Cancel order");
 
         orderService.cancelOrder(orderId);
 
         return ApiResponse.builder()
-                .status(HttpStatus.ACCEPTED.value())
+                .status(HttpStatus.NO_CONTENT.value())
                 .message("Cancel order successfully")
                 .data("").build();
     }

@@ -12,9 +12,8 @@ import java.util.List;
 @Setter
 public class OrderRequest {
     private Long userId;
-    private BigDecimal totalAmount;
     private OrderStatus status;
     private String shippingAddress;
-    private PaymentMethod paymentMethod;
+    private String paymentMethod;
     private List<OrderItemRequest> orderItem;
 }

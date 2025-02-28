@@ -1,23 +1,23 @@
 package com.bang.WebBanHang_Project.service.impl;
 
 import com.bang.WebBanHang_Project.common.OrderStatus;
+import com.bang.WebBanHang_Project.common.PaymentMethod;
 import com.bang.WebBanHang_Project.common.PaymentStatus;
 import com.bang.WebBanHang_Project.common.RefundStatus;
+import com.bang.WebBanHang_Project.controller.request.OrderItemDelRequest;
 import com.bang.WebBanHang_Project.controller.request.OrderItemRequest;
 import com.bang.WebBanHang_Project.controller.request.OrderRequest;
 import com.bang.WebBanHang_Project.controller.request.RefundRequest;
 import com.bang.WebBanHang_Project.controller.response.OrderItemResponse;
 import com.bang.WebBanHang_Project.controller.response.OrderResponse;
-import com.bang.WebBanHang_Project.exception.InsufficientInventoryException;
-import com.bang.WebBanHang_Project.exception.InventoryServiceException;
-import com.bang.WebBanHang_Project.exception.OrderCancellationException;
-import com.bang.WebBanHang_Project.exception.ResourceNotFoundException;
+import com.bang.WebBanHang_Project.exception.*;
 import com.bang.WebBanHang_Project.model.Order;
 import com.bang.WebBanHang_Project.model.OrderItem;
 import com.bang.WebBanHang_Project.model.ProductEntity;
 import com.bang.WebBanHang_Project.repository.OrderItemRepository;
 import com.bang.WebBanHang_Project.repository.OrderRepository;
 import com.bang.WebBanHang_Project.repository.ProductRepository;
+import com.bang.WebBanHang_Project.service.EmailService;
 import com.bang.WebBanHang_Project.service.InventoryService;
 import com.bang.WebBanHang_Project.service.OrderService;
 import com.bang.WebBanHang_Project.service.PaymentService;
@@ -44,10 +44,11 @@ public class OrderServiceImpl implements OrderService {
     private final ProductRepository productRepository;
     private final PaymentService paymentService;
     private final OrderItemRepository orderItemRepository;
+    private final EmailService emailService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String createOrder(OrderRequest orderRequest) {
+    public long createOrder(OrderRequest orderRequest) {
         try{
 
             validateOrderRequest(orderRequest);
@@ -57,10 +58,26 @@ public class OrderServiceImpl implements OrderService {
             Order order = new Order();
             order.setUserId(orderRequest.getUserId());
             order.setOrderDate(LocalDateTime.now());
-            order.setStatus(orderRequest.getStatus());
+            order.setStatus(OrderStatus.PENDING);
             order.setShippingAddress(orderRequest.getShippingAddress());
-            order.setPaymentMethod(orderRequest.getPaymentMethod());
 
+            switch (orderRequest.getPaymentMethod().toLowerCase()) {
+                case "cash":
+                    order.setPaymentMethod(PaymentMethod.CASH);
+                    break;
+                case "card":
+                    order.setPaymentMethod(PaymentMethod.CARD);
+                    break;
+                case "bank":
+                    order.setPaymentMethod(PaymentMethod.BANK);
+                    break;
+                case "qrcode":
+                    order.setPaymentMethod(PaymentMethod.QR_CODE);
+                    break;
+                default:
+                    order.setPaymentMethod(PaymentMethod.COD);
+            }
+            
             BigDecimal totalAmount = BigDecimal.ZERO;
             List<OrderItem> orderItems = new ArrayList<>();
 
@@ -76,12 +93,32 @@ public class OrderServiceImpl implements OrderService {
 
 //            processPayment(order);
 
-            return order.getId().toString();
+            return order.getId();
 
         } catch (Exception e){
             log.error("Error creating order: ", e);
+            throw new InvalidDataException("Error creating order");
         }
-        return "0";
+    }
+
+    private void validateOrderRequest(OrderRequest orderRequest) throws ValidationException {
+        if(orderRequest.getUserId() == null){
+            throw new ValidationException("User ID is required");
+        }
+        if (orderRequest.getOrderItem() == null || orderRequest.getOrderItem().isEmpty()){
+            throw new ValidationException("Order must contain at least one item");
+        }
+    }
+
+    private void checkAndReserveInventory(List<OrderItemRequest> items){
+        for (OrderItemRequest item : items){
+            boolean reserved = inventoryService.reserveStock(
+                    item.getProductId(), item.getQuantity()
+            );
+            if(!reserved){
+                throw new InsufficientInventoryException("Insufficient inventory for product: " + item.getProductId());
+            }
+        }
     }
 
     @Override
@@ -130,7 +167,6 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    @Transactional
     public void cancelOrder(Long orderId) {
         log.info("Starting order cancellation process for orderId: {}", orderId);
 
@@ -161,81 +197,6 @@ public class OrderServiceImpl implements OrderService {
             throw new OrderCancellationException("Failed to cancel order",e);
         }
 
-    }
-
-    @Override
-    public void addOrderItem(Long orderId, OrderItemRequest request) {
-        log.info("Add orderItem to order");
-
-        Order order = orderRepository.findById(orderId).orElseThrow(
-                () -> new ResourceNotFoundException("Order not found"));
-
-        OrderItem orderItem = new OrderItem();
-        orderItem.setProductId(request.getProductId());
-        orderItem.setQuantity(request.getQuantity());
-        orderItem.setPrice(request.getPrice());
-        orderItem.setSubtotal(request.getSubtotal());
-        orderItemRepository.save(orderItem);
-
-        List<OrderItem> itemList = order.getOrderItems();
-        itemList.add(orderItem);
-        order.setOrderItems(itemList);
-        orderRepository.save(order);
-    }
-
-    @Override
-    public void removeOrderItem(Long orderId, Long itemId) {
-        log.info("Remove orderItem");
-
-        Order order = orderRepository.findById(orderId).orElseThrow(
-                () -> new ResourceNotFoundException("Order not found"));
-
-        OrderItem orderItem = orderItemRepository.findById(itemId).orElseThrow(
-                () -> new ResourceNotFoundException("OrderItem not found"));
-
-        orderItemRepository.delete(orderItem);
-
-        List<OrderItem> itemList = order.getOrderItems();
-        itemList.remove(orderItem);
-        orderRepository.save(order);
-    }
-
-    private Order getOrderById(Long orderId){
-        return orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
-    }
-
-    private void validateOrderRequest(OrderRequest orderRequest) throws ValidationException {
-        if(orderRequest.getUserId() == null){
-            throw new ValidationException("User ID is required");
-        }
-        if (orderRequest.getOrderItem() == null || orderRequest.getOrderItem().isEmpty()){
-            throw new ValidationException("Order must contain at least one item");
-        }
-    }
-
-    private void checkAndReserveInventory(List<OrderItemRequest> items){
-        for (OrderItemRequest item : items){
-            boolean reserved = inventoryService.reserveStock(
-                    item.getProductId(), item.getQuantity()
-            );
-            if(!reserved){
-                throw new InsufficientInventoryException("Insufficient inventory for product: " + item.getProductId());
-            }
-        }
-    }
-
-    private OrderItem createOrderItem(Order order, OrderItemRequest itemRequest){
-
-        ProductEntity product = productRepository.getById(itemRequest.getProductId());
-
-        OrderItem item = new OrderItem();
-        item.setOrder(order);
-        item.setProductId(itemRequest.getProductId());
-        item.setQuantity(itemRequest.getQuantity());
-        item.setPrice(itemRequest.getPrice());
-        item.setSubtotal(product.getPrice().multiply(new BigDecimal(itemRequest.getQuantity())));
-
-        return item;
     }
 
     private boolean canCancelOrder(Order order){
@@ -304,4 +265,80 @@ public class OrderServiceImpl implements OrderService {
             log.error("Failed to process refund for order: {}", order.getId());
         }
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addOrderItem(Long orderId, OrderItemRequest request) {
+        log.info("Add orderItem to order");
+
+        Order order = orderRepository.findById(orderId).orElseThrow(
+                () -> new ResourceNotFoundException("Order not found"));
+
+        ProductEntity product = productRepository.findById(request.getProductId()).orElseThrow(
+                () -> new ResourceNotFoundException("Product not found"));
+
+        if(inventoryService.checkAvailability(product.getId(),request.getQuantity())){
+            OrderItem orderItem = new OrderItem();
+            orderItem.setProductId(request.getProductId());
+            orderItem.setQuantity(request.getQuantity());
+            orderItem.setPrice(product.getPrice());
+            orderItem.setSubtotal(product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity())));
+            orderItem.setOrder(order);
+            orderItemRepository.save(orderItem);
+
+            inventoryService.reserveStock(product.getId(),request.getQuantity());
+
+            List<OrderItem> itemList = order.getOrderItems();
+            itemList.add(orderItem);
+            order.setOrderItems(itemList);
+            order.setTotalAmount(order.getTotalAmount().add(product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()))));
+            orderRepository.save(order);
+        } else {
+            throw new InventoryServiceException("Insufficient inventory");
+        }
+    }
+
+    @Override
+    public void removeOrderItem(OrderItemDelRequest request) {
+        log.info("Remove orderItem");
+
+        Order order = orderRepository.findById(request.getOrderId()).orElseThrow(
+                () -> new ResourceNotFoundException("Order not found"));
+
+        OrderItem orderItem = orderItemRepository.findByOrderIdAndProductId(request.getOrderId(), request.getProductId());
+
+        if(request.getQuantity() >= orderItem.getQuantity()){
+            orderItemRepository.delete(orderItem);
+            inventoryService.releaseStock(orderItem.getProductId(),request.getQuantity());
+
+            List<OrderItem> itemList = order.getOrderItems();
+            itemList.remove(orderItem);
+            order.setTotalAmount(order.getTotalAmount().subtract(orderItem.getSubtotal()));
+            orderRepository.save(order);
+        } else {
+            orderItem.setQuantity(orderItem.getQuantity() - request.getQuantity());
+            orderItemRepository.save(orderItem);
+            inventoryService.releaseStock(orderItem.getProductId(),request.getQuantity());
+
+            order.setTotalAmount(order.getTotalAmount().subtract(orderItem.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()))));
+            orderRepository.save(order);
+        }
+
+    }
+
+    private OrderItem createOrderItem(Order order, OrderItemRequest itemRequest){
+
+        ProductEntity product = productRepository.findById(itemRequest.getProductId()).orElseThrow(
+                () -> new ResourceNotFoundException("Product not found"));
+
+        OrderItem item = new OrderItem();
+        item.setOrder(order);
+        item.setProductId(itemRequest.getProductId());
+        item.setQuantity(itemRequest.getQuantity());
+        item.setPrice(product.getPrice());
+        item.setSubtotal(product.getPrice().multiply(new BigDecimal(itemRequest.getQuantity())));
+
+        return item;
+    }
+
 }

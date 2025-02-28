@@ -38,4 +38,6 @@ public class ProductEntity extends AbstractEntity<Long> implements Serializable 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
     private List<Inventory> inventories;
 
+    @OneToMany(mappedBy = "product",cascade = CascadeType.ALL)
+    private List<Review> reviews;
 }

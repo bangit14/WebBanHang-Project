@@ -69,6 +69,7 @@ public class UserEntity extends AbstractEntity<Long> implements UserDetails,Seri
     @OneToMany(mappedBy = "user")
     private Set<GroupHasUser> groups = new HashSet<>();
 
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
 

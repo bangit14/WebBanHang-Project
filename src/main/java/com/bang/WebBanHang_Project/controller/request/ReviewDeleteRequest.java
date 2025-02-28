@@ -3,10 +3,9 @@ package com.bang.WebBanHang_Project.controller.request;
 import lombok.Getter;
 import lombok.Setter;
 
-
 @Getter
 @Setter
-public class OrderItemRequest {
+public class ReviewDeleteRequest {
     private Long productId;
-    private Long quantity;
+    private Long userId;
 }
