@@ -1,14 +1,13 @@
 package com.bang.WebBanHang_Project.controller.response;
 
 import com.bang.WebBanHang_Project.common.AttributeType;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.util.List;
+import lombok.*;
 
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class CategoryAttributeResponse {
 
     private Long id;
@@ -17,6 +16,5 @@ public class CategoryAttributeResponse {
     private String description;
     private AttributeType type;
     private boolean required;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private List<String> options;
+    private String options;
 }

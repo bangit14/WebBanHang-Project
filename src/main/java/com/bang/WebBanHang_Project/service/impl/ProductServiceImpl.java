@@ -1,18 +1,15 @@
 package com.bang.WebBanHang_Project.service.impl;
 
-import com.bang.WebBanHang_Project.controller.request.InventoryCreationRequest;
-import com.bang.WebBanHang_Project.controller.request.InventoryUpdateRequest;
+
 import com.bang.WebBanHang_Project.controller.request.ProductCreationRequest;
 import com.bang.WebBanHang_Project.controller.request.ProductUpdateRequest;
 import com.bang.WebBanHang_Project.controller.response.*;
 import com.bang.WebBanHang_Project.exception.InvalidDataException;
 import com.bang.WebBanHang_Project.exception.ResourceNotFoundException;
 import com.bang.WebBanHang_Project.model.Category;
-import com.bang.WebBanHang_Project.model.Inventory;
 import com.bang.WebBanHang_Project.model.ProductEntity;
 import com.bang.WebBanHang_Project.model.Unit;
 import com.bang.WebBanHang_Project.repository.CategoryRepository;
-import com.bang.WebBanHang_Project.repository.InventoryRepository;
 import com.bang.WebBanHang_Project.repository.ProductRepository;
 import com.bang.WebBanHang_Project.repository.UnitRepository;
 import com.bang.WebBanHang_Project.service.ProductService;
@@ -28,7 +25,6 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

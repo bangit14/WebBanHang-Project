@@ -1,6 +1,5 @@
 package com.bang.WebBanHang_Project.controller;
 
-import com.bang.WebBanHang_Project.controller.request.InventoryUpdateRequest;
 import com.bang.WebBanHang_Project.controller.request.ProductCreationRequest;
 import com.bang.WebBanHang_Project.controller.request.ProductUpdateRequest;
 import com.bang.WebBanHang_Project.controller.response.ApiResponse;
@@ -23,6 +22,21 @@ import org.springframework.web.bind.annotation.*;
 public class ProductController {
 
     private final ProductService productService;
+
+    @Operation(summary = "Get product list", description = "API get product list from database")
+    @GetMapping("/list")
+    public ApiResponse getProductList(@RequestParam(required = false) String keyword,
+                                      @RequestParam(required = false) String sort,
+                                      @RequestParam(defaultValue = "0") int page,
+                                      @RequestParam(defaultValue = "20") int size) {
+        log.info("Get product list");
+
+        return ApiResponse.builder()
+                .status(HttpStatus.OK.value())
+                .message("product list")
+                .data(productService.findAll(keyword, sort, page, size))
+                .build();
+    }
 
     @Operation(summary = "Get Product", description = "API get product by id from to database")
     @GetMapping("/{productId}")

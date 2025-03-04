@@ -97,12 +97,42 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse findByUsername(String username) {
-        return null;
+        log.info("Find User by name");
+
+        UserEntity user = userRepository.findByUsername(username);
+
+        if (user == null){
+            throw new ResourceNotFoundException("User not exist");
+        }
+
+        return UserResponse.builder()
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .phone(user.getPhone())
+                .email(user.getEmail())
+                .birthday(user.getBirthday())
+                .gender(user.getGender())
+                .username(user.getUsername())
+                .build();
     }
 
     @Override
     public UserResponse findByEmail(String email) {
-        return null;
+        log.info("Find user by email");
+
+        UserEntity user = userRepository.findByEmail(email);
+
+        return UserResponse.builder()
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .phone(user.getPhone())
+                .email(user.getEmail())
+                .birthday(user.getBirthday())
+                .gender(user.getGender())
+                .username(user.getUsername())
+                .build();
     }
 
     @Override
@@ -111,7 +141,9 @@ public class UserServiceImpl implements UserService {
         log.info("Saving user: {}", req);
 
         UserEntity userByEmail = userRepository.findByEmail(req.getEmail());
-        if (userByEmail != null) {
+        UserEntity userByUsername = userRepository.findByUsername(req.getUsername());
+
+        if (userByEmail != null || userByUsername != null) {
             throw new InvalidDataException("Email already exists");
         }
 

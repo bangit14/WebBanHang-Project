@@ -24,6 +24,22 @@ public class OrderController {
 
     private final OrderService orderService;
 
+
+    @Operation(summary = "Get order list", description = "API get order list from database")
+    @GetMapping("/list")
+    public ApiResponse getOrderList(@RequestParam(required = false) String keyword,
+                                    @RequestParam(required = false) String sort,
+                                    @RequestParam(defaultValue = "0") int page,
+                                    @RequestParam(defaultValue = "20") int size){
+        log.info("Get order list");
+
+        return ApiResponse.builder()
+                .status(HttpStatus.OK.value())
+                .message("Order List")
+                .data(orderService.getList(keyword,sort,page,size)).build();
+
+    }
+
     @Operation(summary = "Get Order", description = "API get order by id from to database")
     @GetMapping("/{orderId}")
     public ApiResponse getOrder(@PathVariable Long orderId){

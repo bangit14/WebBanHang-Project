@@ -19,9 +19,6 @@ public class CategoryAttributeUpdate {
     @NotNull(message = "Attribute ID is required")
     private Long attributeId;
 
-    @NotNull(message = "Category ID is required")
-    private Long categoryId;
-
     @NotBlank(message = "Name is required")
     @Size(max = 255, message = "Name must not exceed 255 characters")
     private String name;
@@ -34,6 +31,5 @@ public class CategoryAttributeUpdate {
 
     private boolean required;
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private List<String> options;
+    private String options;
 }

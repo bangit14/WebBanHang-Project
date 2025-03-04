@@ -28,6 +28,5 @@ public class CategoryAttributeRequest {
 
     private boolean required;
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private List<String> options;
+    private String options;
 }

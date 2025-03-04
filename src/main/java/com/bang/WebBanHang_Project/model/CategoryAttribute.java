@@ -1,13 +1,11 @@
 package com.bang.WebBanHang_Project.model;
 
 import com.bang.WebBanHang_Project.common.AttributeType;
-import com.bang.WebBanHang_Project.converter.JsonConverter;
 import com.bang.WebBanHang_Project.exception.InvalidDataException;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
 @Entity
@@ -39,9 +37,8 @@ public class CategoryAttribute extends AbstractEntity<Long>{
     @Column(name = "required", nullable = false)
     private boolean required;
 
-    @Column(name = "options", columnDefinition = "jsonb")
-    @Convert(converter = JsonConverter.class)
-    private List<String> options;
+    @Column(name = "options")
+    private String options;
 
     public boolean isValid() {
 
@@ -59,18 +56,8 @@ public class CategoryAttribute extends AbstractEntity<Long>{
             errors.add("Attribute type is required");
         }
 
-        if (type == AttributeType.SELECT){
-            if (options == null || options.isEmpty()){
-                errors.add("Options are required for SELECT type attribute");
-            } else {
-                if (options.stream().anyMatch(String::isEmpty)){
-                    errors.add("Empty options are not allowed");
-                }
-
-                if (options.size() != new HashSet<>(options).size()){
-                    errors.add("Duplicate options are not allowed");
-                }
-            }
+        if (options == null || options.isEmpty()){
+            errors.add("Options are required for SELECT type attribute");
         }
 
         if (!errors.isEmpty()){

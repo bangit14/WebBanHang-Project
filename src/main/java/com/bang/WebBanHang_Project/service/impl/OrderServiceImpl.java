@@ -9,6 +9,7 @@ import com.bang.WebBanHang_Project.controller.request.OrderItemRequest;
 import com.bang.WebBanHang_Project.controller.request.OrderRequest;
 import com.bang.WebBanHang_Project.controller.request.RefundRequest;
 import com.bang.WebBanHang_Project.controller.response.OrderItemResponse;
+import com.bang.WebBanHang_Project.controller.response.OrderPageResponse;
 import com.bang.WebBanHang_Project.controller.response.OrderResponse;
 import com.bang.WebBanHang_Project.exception.*;
 import com.bang.WebBanHang_Project.model.Order;
@@ -24,8 +25,13 @@ import com.bang.WebBanHang_Project.service.PaymentService;
 import jakarta.xml.bind.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -33,6 +39,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j(topic = "ORDER-SERVICE")
@@ -45,6 +53,42 @@ public class OrderServiceImpl implements OrderService {
     private final PaymentService paymentService;
     private final OrderItemRepository orderItemRepository;
     private final EmailService emailService;
+
+    @Override
+    public OrderPageResponse getList(String keyword, String sort, int page, int size) {
+        log.info("Find All order");
+
+        Sort.Order order = new Sort.Order(Sort.Direction.ASC,"id");
+        if(StringUtils.hasLength(sort)){
+            Pattern pattern = Pattern.compile("(\\w?)(:)(.*)");
+            Matcher matcher = pattern.matcher(sort);
+            if(matcher.find()){
+                String columnName = matcher.group(1);
+                if(matcher.group(3).equalsIgnoreCase("asc")){
+                    order = new Sort.Order(Sort.Direction.ASC,columnName);
+                } else {
+                    order = new Sort.Order(Sort.Direction.DESC,columnName);
+                }
+            }
+        }
+
+        int pageNo = 0;
+        if(page > 0){
+            pageNo = page - 1;
+        }
+
+        Pageable pageable = PageRequest.of(pageNo,size,Sort.by(order));
+        Page<Order> orderPage;
+
+        if (StringUtils.hasLength(keyword)) {
+            keyword = "%" + keyword.toLowerCase() + "%";
+            orderPage = orderRepository.searchByKeyword(keyword, pageable);
+        } else {
+            orderPage = orderRepository.findAll(pageable);
+        }
+
+        return getOrderPageResponse(page,size,orderPage);
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -148,11 +192,6 @@ public class OrderServiceImpl implements OrderService {
         orderResponse.setOrderItem(orderItemResponseList);
 
         return orderResponse;
-    }
-
-    @Override
-    public List<OrderResponse> getUserOrder(Long userId) {
-        return List.of();
     }
 
     @Override
@@ -341,4 +380,36 @@ public class OrderServiceImpl implements OrderService {
         return item;
     }
 
+    private static OrderPageResponse getOrderPageResponse(int page, int size, Page<Order> orderPage){
+        log.info("Convert Order Page");
+
+        List<OrderResponse> orderList = orderPage.stream().map(order ->
+                OrderResponse.builder()
+                        .userId(order.getUserId())
+                        .orderDate(order.getOrderDate())
+                        .totalAmount(order.getTotalAmount())
+                        .shippingAddress(order.getShippingAddress())
+                        .paymentMethod(order.getPaymentMethod())
+                        .orderItem(getOrderResponseList(order.getOrderItems()))
+                        .build()
+        ).toList();
+
+        OrderPageResponse response = new OrderPageResponse();
+        response.setPageNumber(page);
+        response.setPageSize(size);
+        response.setTotalElements(orderPage.getTotalElements());
+        response.setTotalElements(orderPage.getTotalElements());
+        response.setOrders(orderList);
+
+        return response;
+    }
+
+    private static List<OrderItemResponse> getOrderResponseList(List<OrderItem> orderItemList){
+        return orderItemList.stream().map(orderItem -> OrderItemResponse.builder()
+                .price(orderItem.getPrice())
+                .subtotal(orderItem.getSubtotal())
+                .quantity(orderItem.getQuantity())
+                .productId(orderItem.getProductId())
+                .build()).toList();
+    }
 }

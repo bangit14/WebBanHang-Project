@@ -71,7 +71,7 @@ public class CategoryServiceImpl implements CategoryService {
         log.info("Get CategoryAttribute");
 
         if(!categoryRepository.existsById(categoryId)){
-            throw new ResourceNotFoundException("Category not found");
+            throw new ResourceNotFoundException("Categories don't exist in the data");
         }
 
         Page<CategoryAttribute> attributes = categoryAttributeRepository.findByCategoryId(categoryId,pageable);
@@ -97,13 +97,30 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
-        if (categoryAttributeRepository.existsByCategoryIdAndName(categoryId,request.getName())){
-            throw new DuplicateResourceException("Attribute with name '" + request.getName()
-                    + "' already exists in category " + categoryId);
+        List<CategoryAttribute> categoryAttributeList = categoryAttributeRepository.getAttributeByCategoryIdAndName(categoryId,request.getName());
+
+        if(!categoryAttributeList.isEmpty()){
+            for(CategoryAttribute categoryAttribute : categoryAttributeList){
+                if(categoryAttribute.getOptions().equalsIgnoreCase(request.getOptions())){
+                    throw new DuplicateResourceException("Category attribute already exist");
+                }
+            }
         }
 
+        CategoryAttribute attribute = createCategoryAttribute(request, category);
+
+        if(attribute.isValid()){
+            categoryAttributeRepository.save(attribute);
+            return attribute.getId();
+        } else {
+            log.error("Invalid attribute data");
+            throw new InvalidDataException("Data is invalid");
+        }
+    }
+
+    private static CategoryAttribute createCategoryAttribute(CategoryAttributeRequest request, Category category) {
         CategoryAttribute attribute = new CategoryAttribute();
-        attribute.setCategoryId(categoryId);
+        attribute.setCategoryId(category.getId());
         attribute.setName(request.getName());
         attribute.setDescription(request.getDescription());
 
@@ -121,31 +138,21 @@ public class CategoryServiceImpl implements CategoryService {
         }
         attribute.setRequired(request.isRequired());
         attribute.setOptions(request.getOptions());
-
-
-       // if(!attribute.isValid()){
-            categoryAttributeRepository.save(attribute);
-            //return attribute.getId();
-       // } else {
-        //    log.error("Invalid attribute data");
-       // }
-        return attribute.getId();
+        return attribute;
     }
 
     @Override
-    public void updateAttribute(CategoryAttributeUpdate request) {
+    public void updateAttribute(Long categoryId,CategoryAttributeUpdate request) {
         log.info("Updated CategoryAttribute");
 
-        CategoryAttribute categoryAttribute = categoryAttributeRepository.findById(request.getAttributeId())
-                .orElseThrow(() -> new ResourceNotFoundException("Attribute not found"));
+        CategoryAttribute categoryAttribute = categoryAttributeRepository.findByIdAndCategoryId(request.getAttributeId(),categoryId);
 
-        if (categoryAttributeRepository.existsByCategoryIdAndNameAndIdNot(
-                categoryAttribute.getCategoryId(), request.getName(), request.getAttributeId())) {
+        if (categoryAttribute == null) {
             throw new DuplicateResourceException("Attribute name already exist in this category");
         }
 
         categoryAttribute.setId(request.getAttributeId());
-        categoryAttribute.setCategoryId(request.getCategoryId());
+        categoryAttribute.setCategoryId(categoryId);
         categoryAttribute.setName(request.getName());
         categoryAttribute.setDescription(request.getDescription());
 
@@ -165,7 +172,7 @@ public class CategoryServiceImpl implements CategoryService {
         categoryAttribute.setRequired(true);
         categoryAttribute.setOptions(request.getOptions());
 
-        if (categoryAttribute.isValid()) {
+        if (!categoryAttribute.isValid()) {
             throw new InvalidDataException("Invalid attribute data");
         }
 
@@ -175,14 +182,11 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public void deleteAttribute(long attributeId) {
+    public void deleteAttribute(Long categoryId, Long attributeId) {
         log.info("Deleted categoryAttribute");
 
-        if(!categoryAttributeRepository.existsById(attributeId)){
-            throw new ResourceNotFoundException("Attribute not found");
-        }
-
-        categoryAttributeRepository.deleteById(attributeId);
+        CategoryAttribute categoryAttribute = categoryAttributeRepository.findByIdAndCategoryId(attributeId,categoryId);
+        categoryAttributeRepository.delete(categoryAttribute);
     }
 
     @Override

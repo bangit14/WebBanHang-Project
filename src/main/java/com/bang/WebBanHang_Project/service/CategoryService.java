@@ -34,7 +34,7 @@ public interface CategoryService {
 
     long addAttribute(Long categoryId,CategoryAttributeRequest request);
 
-    void updateAttribute(CategoryAttributeUpdate request);
+    void updateAttribute(Long categoryId,CategoryAttributeUpdate request);
 
-    void deleteAttribute(long attributeId);
+    void deleteAttribute(Long categoryId, Long attributeId);
 }

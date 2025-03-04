@@ -86,7 +86,7 @@ public class CategoryController {
     }
 
     @Operation(summary = "Get attribute list", description = "API get attributeList from database")
-    @GetMapping("/list")
+    @GetMapping("/{categoryId}/list")
     public ApiResponse getAttributeList(@PathVariable Long categoryId, @RequestBody Pageable pageable){
         log.info("Get attributeList");
 
@@ -108,11 +108,11 @@ public class CategoryController {
     }
 
     @Operation(summary = "Update CategoryAttribute", description = "API update categoryAttribute")
-    @PutMapping("/updateAttribute")
-    public ApiResponse updateAttribute(@RequestBody CategoryAttributeUpdate request){
+    @PutMapping("/{categoryId}/updateAttribute")
+    public ApiResponse updateAttribute(@PathVariable Long categoryId,@RequestBody CategoryAttributeUpdate request){
         log.info("Update Attribute");
 
-        categoryService.updateAttribute(request);
+        categoryService.updateAttribute(categoryId,request);
 
         return ApiResponse.builder()
                 .status(HttpStatus.ACCEPTED.value())
@@ -121,11 +121,11 @@ public class CategoryController {
     }
 
     @Operation(summary = "Delete CategoryAttribute", description = "API delete attribute")
-    @DeleteMapping("/{categoryId}/delAttribute")
-    public ApiResponse deleteAttribute(@PathVariable Long categoryId){
+    @DeleteMapping("/{categoryId}/delAttribute/{attributeId}")
+    public ApiResponse deleteAttribute(@PathVariable Long categoryId, @PathVariable Long attributeId){
         log.info("Delete Attribute");
 
-        categoryService.deleteAttribute(categoryId);
+        categoryService.deleteAttribute(categoryId,attributeId);
 
         return ApiResponse.builder()
                 .status(HttpStatus.NO_CONTENT.value())
