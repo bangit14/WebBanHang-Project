@@ -28,7 +28,9 @@ Describe or diagram the high-level Business Process to be automated.
   - `Booking` publish `BookingConfirmed` (khi confirmed)
   - `Room` và `Notification` consume event để xử lý (reserve room, gửi email/SMS)
 **Actors:** User (Khách hàng)
+
 **Scope:** Quản lý đặt phòng , Xử lý thanh toán, Đồng bộ trạng thái phòng, Gửi thông báo, Giao tiếp bất đồng bộ qua message broker
+
 **Process Diagram:**
 
 ```mermaid
@@ -43,13 +45,13 @@ flowchart LR
     MQ --> N[Notification Service]
 ```
 
-### 1.2 Existing Automation Systems (Updated)
+### 1.2 Existing Automation Systems
 
 | System Name | Type | Current Role                                       | Interaction Method |
 | ----------- | ---- | -------------------------------------------------- | ------------------ |
 | None        | -    | None — the process is currently performed manually | -                  |
 
-### 1.3 Non-Functional Requirements (Updated)
+### 1.3 Non-Functional Requirements
 
 | Requirement  | Description                                                               |
 | ------------ | ------------------------------------------------------------------------- |
@@ -150,7 +152,7 @@ Payment Service
 
 | Endpoint                             | Method | Media Type       | Response Codes |
 | ------------------------------------ | ------ | ---------------- | -------------- |
-| /payments (optional - internal/test) | POST   | application/json | 200, 400       |
+| /payments                            | POST   | application/json | 200, 400       |
 
 Room Service
 
