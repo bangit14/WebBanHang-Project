@@ -27,6 +27,105 @@ Select patterns based on business/technical justifications from your analysis.
 | Service Registry / Discovery | ✅            | Dynamic discovery (Eureka)                                                                |
 | Other: Outbox Pattern        | ✅            | Đảm bảo atomicity giữa DB và event publish                                                |
 
+1. API Gateway — ✅
+👉 Hiểu đơn giản:
+Là cổng chính của hệ thống
+📌 Ví dụ:
+User chỉ gọi:
+/bookings
+KHÔNG cần biết:
+Booking ở port nào
+Service nào xử lý
+👉 Gateway sẽ:
+Nhận request
+Chuyển đến đúng service
+🎯 Vì sao cần:
+Dễ quản lý
+Thêm auth (JWT), logging
+🟩 2. Database per Service — ✅
+👉 Hiểu đơn giản:
+Mỗi service có database riêng
+📌 Ví dụ:
+Booking DB → chỉ chứa booking
+Payment DB → chỉ chứa payment
+🎯 Vì sao cần:
+Tránh phụ thuộc nhau
+Không bị lỗi dây chuyền
+🟥 3. Shared Database — ❌
+👉 Nếu dùng:
+Tất cả service dùng chung 1 DB
+❌ Vấn đề:
+Booking sửa DB → Payment bị ảnh hưởng
+Khó scale
+👉 Giống kiểu:
+nhiều người cùng sửa 1 file → dễ lỗi
+🟨 4. Saga (Choreography) — ✅
+👉 Hiểu đơn giản:
+Là cách xử lý nhiều bước liên tiếp
+📌 Flow của bạn:
+Booking tạo
+Payment xử lý
+Booking confirm
+Room reserve
+Email gửi
+👉 Không có “thằng điều khiển trung tâm”
+👉 Mỗi service tự làm khi có event
+🎯 Vì sao chọn:
+Đơn giản
+Phù hợp event-driven
+🟪 5. Event-driven — ✅ (quan trọng nhất)
+👉 Hiểu đơn giản:
+Service không gọi nhau
+👉 Thay vào đó:
+Gửi “event”
+📌 Ví dụ:
+Booking tạo xong:
+BookingCreated
+Payment nghe thấy → xử lý
+🎯 Lợi ích:
+Không phụ thuộc nhau
+Dễ mở rộng
+Dễ thêm service mới
+⚪ 6. CQRS — ❌
+👉 CQRS là gì:
+Tách:
+Write (ghi)
+Read (đọc)
+📌 Nhưng hệ thống bạn:
+Chưa tách riêng DB read
+Chỉ đơn giản là:
+Event để write
+API để read
+👉 Chưa đủ “level” CQRS
+⚫ 7. Circuit Breaker — ❌
+👉 Dùng khi:
+Service gọi nhau bằng REST
+📌 Nhưng bạn:
+Dùng event (async)
+Không gọi trực tiếp
+👉 Không cần
+🟧 8. Service Discovery — ✅
+👉 Hiểu đơn giản:
+Service có thể đổi IP/port
+👉 Discovery giúp:
+Tìm service tự động
+📌 Ví dụ:
+Gateway không cần biết:
+booking-service:8081
+🟫 9. Outbox Pattern — ✅ (rất quan trọng)
+👉 Vấn đề thực tế:
+Booking:
+Lưu DB
+Gửi event
+👉 Nếu:
+Lưu DB thành công
+Nhưng gửi event FAIL
+❌ → hệ thống bị sai
+👉 Outbox giải quyết:
+Ghi event vào DB trước
+Sau đó gửi đi
+👉 Không mất event
+
 ---
 
 ## 2. System Components
