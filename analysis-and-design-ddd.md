@@ -33,7 +33,7 @@ Describe or diagram the high-level Business Process to be automated.
 
 **Scope:** Quản lý đặt phòng, Xử lý thanh toán, Đồng bộ trạng thái phòng, Gửi thông báo, Giao tiếp bất đồng bộ qua message broker
 
-**Process Diagram (UPDATED)**
+**Process Diagram**
 
 ```mermaid
 flowchart LR
@@ -62,7 +62,7 @@ flowchart LR
 | ----------- | ---- | -------------------------------------------------- | ------------------ |
 | None        | -    | None — the process is currently performed manually | -                  |
 
-### 1.3 Non-Functional Requirements (UPDATED)
+### 1.3 Non-Functional Requirements
 
 | Requirement  | Description                                                               |
 | ------------ | ------------------------------------------------------------------------- |
@@ -77,7 +77,7 @@ flowchart LR
 
 ## Part 2 — Strategic Domain-Driven Design
 
-### 2.1 Event Storming — Domain Events (UPDATED)
+### 2.1 Event Storming — Domain Events 
 
 | #   | Domain Event     | Triggered By     | Description                                          |
 | --- | ---------------- | ---------------- | ---------------------------------------------------- |
@@ -93,7 +93,7 @@ flowchart LR
 | 10  | RoomReleased     | Room Service     | Giải phóng phòng                                     |
 | 11  | EmailSent        | Notification Svc | Gửi email xác nhận                                   |
 
-### 2.2 Commands and Actors (UPDATED)
+### 2.2 Commands and Actors 
 
 | Command        | Actor                | Triggers Event(s)                |
 | -------------- | -------------------- | -------------------------------- |
@@ -107,7 +107,7 @@ flowchart LR
 | ReleaseRoom    | Room Service         | RoomReleased                     |
 | SendEmail      | Notification Service | EmailSent                        |
 
-### 2.3 Aggregates (UPDATED)
+### 2.3 Aggregates
 
 | Aggregate    | Commands                                     | Domain Events                                                      | Owned Data                                                                  |
 | ------------ | -------------------------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------- |
@@ -116,7 +116,7 @@ flowchart LR
 | Room         | ReserveRoom, ReleaseRoom                     | RoomReserved, RoomReleased                                         | roomId, status, reservations[], version                                     |
 | Notification | SendEmail                                    | EmailSent                                                          | emailId, bookingId, recipient, subject, body, sentAt                        |
 
-### 2.4 Bounded Contexts (UPDATED)
+### 2.4 Bounded Contexts
 
 | Bounded Context      | Aggregates   | Responsibility                                   |
 | -------------------- | ------------ | ------------------------------------------------ |
@@ -125,7 +125,7 @@ flowchart LR
 | Room Context         | Room         | Reserve và release phòng, tránh overbooking      |
 | Notification Context | Notification | Consume event và gửi email                       |
 
-### 2.5 Context Map (UPDATED)
+### 2.5 Context Map
 
 ```mermaid
 graph LR
@@ -178,7 +178,7 @@ graph LR
 | --------------- | ------ | ---------- | -------------- |
 | (No public API) | -      | -          | -              |
 
-#### Event Contracts (UPDATED)
+#### Event Contracts
 
 | Event Name       | Producer | Consumer     |
 | ---------------- | -------- | ------------ |
@@ -189,9 +189,9 @@ graph LR
 | BookingCancelled | Booking  | Room         |
 | BookingExpired   | Booking  | Room         |
 
-### 3.2 Service Logic Design (flowcharts)
+### 3.2 Service Logic Design
 
-#### booking-service (UPDATED)
+#### booking-service
 
 ```mermaid
 flowchart TD
@@ -208,7 +208,7 @@ flowchart TD
     K[Timeout] --> L[Publish BookingExpired]
 ```
 
-#### payment-service (UPDATED)
+#### payment-service
 
 ```mermaid
 flowchart TD
@@ -218,7 +218,7 @@ flowchart TD
     C -->|No| E[Publish PaymentFailed]
 ```
 
-#### room-service (UPDATED)
+#### room-service
 
 ```mermaid
 flowchart TD
