@@ -15,38 +15,36 @@
 
 Select patterns based on business/technical justifications from your analysis.
 
-| Pattern                      | Selected?     | Business/Technical Justification                                                                                            |
-| ---------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| API Gateway                  | ✅            | Central entry point cho client, routing request đến các service (Booking, Payment, Room, Notification), xử lý auth, logging |
-| Database per Service         | ✅            | Mỗi service có DB riêng → loose coupling, dễ scale, phù hợp DDD                                                             |
-| Shared Database              | ❌            | Vi phạm tính độc lập service, gây coupling cao                                                                              |
-| Saga                         | ✅            | Quản lý transaction phân tán: Booking → Payment → Confirm → Room → Email                                                    |
-| Event-driven / Message Queue | ✅            | Giao tiếp async giữa các service (PaymentSuccess, BookingConfirmed, etc.)                                                   |
-| CQRS                         | ⚠️ (Optional) | Có thể dùng cho read-heavy (ví dụ dashboard), chưa bắt buộc                                                                 |
-| Circuit Breaker              | ✅            | Tránh cascade failure khi Payment/Room down                                                                                 |
-| Service Registry / Discovery | ✅            | Dynamic service discovery (Eureka / Consul)                                                                                 |
-| Other: Outbox Pattern        | ✅            | Đảm bảo không mất event khi ghi DB + publish event                                                                          |
-
-> Reference: _Microservices Patterns_ — Chris Richardson, chapters on decomposition, data management, and communication patterns.
+| Pattern                      | Selected?     | Business/Technical Justification                                                          |
+| ---------------------------- | ------------- | ----------------------------------------------------------------------------------------- |
+| API Gateway                  | ✅            | Central entry point cho client, routing request đến Booking (và read APIs), auth, logging |
+| Database per Service         | ✅            | Mỗi service có DB riêng → loose coupling, đúng DDD                                        |
+| Shared Database              | ❌            | Gây coupling, không phù hợp microservices                                                 |
+| Saga (Choreography)          | ✅            | Transaction phân tán thông qua event chain (không orchestration)                          |
+| Event-driven / Message Queue | ✅            | Giao tiếp async qua Kafka/RabbitMQ                                                        |
+| CQRS                         | ⚠️ (Optional) | Tách read/write (Room có thể expose API read)                                             |
+| Circuit Breaker              | ⚠️            | Ít dùng hơn do async, nhưng vẫn cần cho Gateway/External calls                            |
+| Service Registry / Discovery | ✅            | Dynamic discovery (Eureka)                                                                |
+| Other: Outbox Pattern        | ✅            | Đảm bảo atomicity giữa DB và event publish                                                |
 
 ---
 
 ## 2. System Components
 
-| Component               | Responsibility                                  | Tech Stack           | Port |
-| ----------------------- | ----------------------------------------------- | -------------------- | ---- |
-| Frontend                | UI cho user đặt phòng, thanh toán               | ReactJS + Axios      | 3000 |
-| Gateway                 | Routing, Auth (JWT), Rate limit                 | Spring Cloud Gateway | 8080 |
-| Booking Service         | Quản lý booking lifecycle (PENDING → CONFIRMED) | Spring Boot          | 8081 |
-| Payment Service         | Xử lý thanh toán                                | Spring Boot          | 8082 |
-| Room Service            | Quản lý trạng thái phòng                        | Spring Boot          | 8083 |
-| Notification Service    | Gửi email xác nhận                              | Spring Boot          | 8084 |
-| Message Broker          | Event-driven communication                      | Kafka / RabbitMQ     | 9092 |
-| Service Registry        | Service discovery                               | Eureka Server        | 8761 |
-| Database (Booking)      | Lưu booking                                     | PostgreSQL           | 5432 |
-| Database (Payment)      | Lưu payment                                     | PostgreSQL           | 5433 |
-| Database (Room)         | Lưu room                                        | PostgreSQL           | 5434 |
-| Database (Notification) | Lưu log email                                   | PostgreSQL           | 5435 |
+| Component            | Responsibility                          | Tech Stack           | Port |
+| -------------------- | --------------------------------------- | -------------------- | ---- |
+| Frontend             | UI đặt phòng                            | ReactJS              | 3000 |
+| Gateway              | Routing + Auth                          | Spring Cloud Gateway | 8080 |
+| Booking Service      | Booking lifecycle + publish event       | Spring Boot          | 8081 |
+| Payment Service      | Consume BookingCreated + xử lý payment  | Spring Boot          | 8082 |
+| Room Service         | Consume BookingConfirmed + reserve room | Spring Boot          | 8083 |
+| Notification Service | Consume BookingConfirmed + gửi email    | Spring Boot          | 8084 |
+| Message Broker       | Event streaming                         | Kafka / RabbitMQ     | 9092 |
+| Service Registry     | Service discovery                       | Eureka               | 8761 |
+| Booking DB           | Lưu booking                             | PostgreSQL           | 5432 |
+| Payment DB           | Lưu payment                             | PostgreSQL           | 5433 |
+| Room DB              | Lưu room                                | PostgreSQL           | 5434 |
+| Notification DB      | Lưu log email                           | PostgreSQL           | 5435 |
 
 ---
 
@@ -54,14 +52,22 @@ Select patterns based on business/technical justifications from your analysis.
 
 Inter-service Communication Matrix
 
-| From → To            | Booking Service        | Payment Service          | Room Service         | Notification Service | Gateway | Database |
-| -------------------- | ---------------------- | ------------------------ | -------------------- | -------------------- | ------- | -------- |
-| Frontend             | ❌                     | ❌                       | ❌                   | ❌                   | ✅      | ❌       |
-| Gateway              | REST                   | REST                     | REST                 | REST                 | ❌      | ❌       |
-| Booking Service      | ❌                     | Event (PaymentRequested) | Event (RoomReserved) | Event (SendEmail)    | ❌      | JDBC     |
-| Payment Service      | Event (PaymentSuccess) | ❌                       | ❌                   | ❌                   | ❌      | JDBC     |
-| Room Service         | ❌                     | ❌                       | ❌                   | ❌                   | ❌      | JDBC     |
-| Notification Service | ❌                     | ❌                       | ❌                   | ❌                   | ❌      | JDBC     |
+| From → To            | Booking Service                 | Payment Service        | Room Service             | Notification Service     | Gateway | Database |
+| -------------------- | ------------------------------- | ---------------------- | ------------------------ | ------------------------ | ------- | -------- |
+| Frontend             | ❌                              | ❌                     | ❌                       | ❌                       | ✅      | ❌       |
+| Gateway              | REST (read APIs only)           | ❌                     | REST (read)              | ❌                       | ❌      | ❌       |
+| Booking Service      | ❌                              | Event (BookingCreated) | Event (BookingConfirmed) | Event (BookingConfirmed) | ❌      | JDBC     |
+| Payment Service      | Event (PaymentSucceeded/Failed) | ❌                     | ❌                       | ❌                       | ❌      | JDBC     |
+| Room Service         | ❌                              | ❌                     | ❌                       | ❌                       | ❌      | JDBC     |
+| Notification Service | ❌                              | ❌                     | ❌                       | ❌                       | ❌      | JDBC     |
+
+
+| Event Name       | Producer | Consumer           |
+| ---------------- | -------- | ------------------ |
+| BookingCreated   | Booking  | Payment            |
+| PaymentSucceeded | Payment  | Booking            |
+| PaymentFailed    | Payment  | Booking            |
+| BookingConfirmed | Booking  | Room, Notification |
 
 ---
 
@@ -75,9 +81,6 @@ graph LR
     FE --> GW[API Gateway]
 
     GW --> BS[Booking Service]
-    GW --> PS[Payment Service]
-    GW --> RS[Room Service]
-    GW --> NS[Notification Service]
 
     BS --> DB1[(Booking DB)]
     PS --> DB2[(Payment DB)]
@@ -85,9 +88,15 @@ graph LR
     NS --> DB4[(Notification DB)]
 
     BS --> MQ[(Message Broker)]
+
+    MQ --> PS[Payment Service]
     PS --> MQ
-    RS --> MQ
-    NS --> MQ
+
+    MQ --> BS
+    BS --> MQ
+
+    MQ --> RS[Room Service]
+    MQ --> NS[Notification Service]
 ```
 
 ---

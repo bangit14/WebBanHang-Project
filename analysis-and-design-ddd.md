@@ -18,16 +18,18 @@
 Describe or diagram the high-level Business Process to be automated.
 
 **Domain**: Hệ thống đặt phòng (Room Booking System)
-**Business Process:** 
-  - User chọn phòng
-  - Tạo booking (PENDING)
-  - Booking publish event `BookingCreated`
-  - `Payment Service` consume và xử lý thanh toán (gọi External Payment Gateway nếu cần)
-  - `Payment` publish `PaymentSucceeded` hoặc `PaymentFailed`
-  - `Booking` cập nhật trạng thái (CONFIRMED / CANCELLED)
-  - `Booking` publish `BookingConfirmed` (khi confirmed)
-  - `Room` và `Notification` consume event để xử lý (reserve room, gửi email/SMS)
-**Actors:** User (Khách hàng)
+
+**Business Process:**
+
+- User chọn phòng
+- Tạo booking (PENDING)
+- Booking publish event `BookingCreated`
+- `Payment Service` consume và xử lý thanh toán (gọi External Payment Gateway nếu cần)
+- `Payment` publish `PaymentSucceeded` hoặc `PaymentFailed`
+- `Booking` cập nhật trạng thái (CONFIRMED / CANCELLED)
+- `Booking` publish `BookingConfirmed` (khi confirmed)
+- `Room` và `Notification` consume event để xử lý (reserve room, gửi email/SMS)
+  **Actors:** User (Khách hàng)
 
 **Scope:** Quản lý đặt phòng , Xử lý thanh toán, Đồng bộ trạng thái phòng, Gửi thông báo, Giao tiếp bất đồng bộ qua message broker
 
@@ -150,15 +152,16 @@ Booking Service
 
 Payment Service
 
-| Endpoint                             | Method | Media Type       | Response Codes |
-| ------------------------------------ | ------ | ---------------- | -------------- |
-| /payments                            | POST   | application/json | 200, 400       |
+| Endpoint  | Method | Media Type       | Response Codes |
+| --------- | ------ | ---------------- | -------------- |
+| /payments | POST   | application/json | 200, 400       |
 
 Room Service
 
-| Endpoint        | Method | Media Type | Response Codes |
-| --------------- | ------ | ---------- | -------------- |
-| (No public API) | -      | -          | -              |
+| Endpoint    | Method | Media Type       | Response Codes |
+| ----------- | ------ | ---------------- | -------------- |
+| /rooms      | GET    | application/json | 200            |
+| /rooms/{id} | GET    | application/json | 200, 404       |
 
 Notification Service
 
