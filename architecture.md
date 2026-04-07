@@ -15,17 +15,17 @@
 
 Select patterns based on business/technical justifications from your analysis.
 
-| Pattern                      | Selected? | Business/Technical Justification                            |
-| ---------------------------- | --------- | ----------------------------------------------------------- |
-| API Gateway                  | ✅        | Entry point duy nhất, xử lý auth, routing, rate limit       |
-| Database per Service         | ✅        | Tách DB cho Booking & Room -> loose coupling, scale độc lập |
-| Shared Database              | ❌        | Tránh coupling, vi phạm microservice principle              |
-| Saga                         | ✅        | Xử lý transaction phân tán giữa Booking ↔ Room              |
-| Event-driven / Message Queue | ✅        | Dùng Kafka để async communication, giảm coupling            |
-| CQRS                         | ❌        | System nhỏ, chưa cần tách read/write                        |
-| Circuit Breaker              | ✅        | Dùng Resilience4j để tránh cascade failure                  |
-| Service Registry / Discovery | ❌        | Dùng Docker network (static), chưa cần Eureka               |
-| Other: Redis Lock            | ✅        | Distributed lock để tránh overbooking                       |
+| Pattern                      | Selected?     | Business/Technical Justification                                                                                            |
+| ---------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| API Gateway                  | ✅            | Central entry point cho client, routing request đến các service (Booking, Payment, Room, Notification), xử lý auth, logging |
+| Database per Service         | ✅            | Mỗi service có DB riêng → loose coupling, dễ scale, phù hợp DDD                                                             |
+| Shared Database              | ❌            | Vi phạm tính độc lập service, gây coupling cao                                                                              |
+| Saga                         | ✅            | Quản lý transaction phân tán: Booking → Payment → Confirm → Room → Email                                                    |
+| Event-driven / Message Queue | ✅            | Giao tiếp async giữa các service (PaymentSuccess, BookingConfirmed, etc.)                                                   |
+| CQRS                         | ⚠️ (Optional) | Có thể dùng cho read-heavy (ví dụ dashboard), chưa bắt buộc                                                                 |
+| Circuit Breaker              | ✅            | Tránh cascade failure khi Payment/Room down                                                                                 |
+| Service Registry / Discovery | ✅            | Dynamic service discovery (Eureka / Consul)                                                                                 |
+| Other: Outbox Pattern        | ✅            | Đảm bảo không mất event khi ghi DB + publish event                                                                          |
 
 > Reference: _Microservices Patterns_ — Chris Richardson, chapters on decomposition, data management, and communication patterns.
 
@@ -33,29 +33,35 @@ Select patterns based on business/technical justifications from your analysis.
 
 ## 2. System Components
 
-| Component           | Responsibility                      | Tech Stack           | Port |
-| ------------------- | ----------------------------------- | -------------------- | ---- |
-| **Frontend**        | UI đặt phòng, gọi API               | React / Next.js      | 3000 |
-| **Gateway**         | Routing, auth, rate limit           | Spring Cloud Gateway | 8080 |
-| **Booking Service** | Quản lý booking + Saga orchestrator | Spring Boot + Kafka  | 5001 |
-| **Room Service**    | Quản lý phòng + xử lý event         | Spring Boot + Kafka  | 5002 |
-| **Kafka Broker**    | Message queue (event-driven)        | Apache Kafka         | 9092 |
-| **Redis**           | Distributed lock                    | Redis                | 6379 |
-| **Booking DB**      | Lưu booking                         | PostgreSQL           | 5433 |
-| **Room DB**         | Lưu room                            | PostgreSQL           | 5434 |
+| Component               | Responsibility                                  | Tech Stack           | Port |
+| ----------------------- | ----------------------------------------------- | -------------------- | ---- |
+| Frontend                | UI cho user đặt phòng, thanh toán               | ReactJS + Axios      | 3000 |
+| Gateway                 | Routing, Auth (JWT), Rate limit                 | Spring Cloud Gateway | 8080 |
+| Booking Service         | Quản lý booking lifecycle (PENDING → CONFIRMED) | Spring Boot          | 8081 |
+| Payment Service         | Xử lý thanh toán                                | Spring Boot          | 8082 |
+| Room Service            | Quản lý trạng thái phòng                        | Spring Boot          | 8083 |
+| Notification Service    | Gửi email xác nhận                              | Spring Boot          | 8084 |
+| Message Broker          | Event-driven communication                      | Kafka / RabbitMQ     | 9092 |
+| Service Registry        | Service discovery                               | Eureka Server        | 8761 |
+| Database (Booking)      | Lưu booking                                     | PostgreSQL           | 5432 |
+| Database (Payment)      | Lưu payment                                     | PostgreSQL           | 5433 |
+| Database (Room)         | Lưu room                                        | PostgreSQL           | 5434 |
+| Database (Notification) | Lưu log email                                   | PostgreSQL           | 5435 |
 
 ---
 
-## 3. Communication
+### 3. Communication
 
-### Inter-service Communication Matrix
+Inter-service Communication Matrix
 
-| From → To     | Service A (Booking) | Service B (Room)   | Gateway | Database | Kafka | Redis |
-| ------------- | ------------------- | ------------------ | ------- | -------- | ----- | ----- |
-| **Frontend**  | ❌                  | ❌                 | ✅      | ❌       | ❌    | ❌    |
-| **Gateway**   | ✅                  | ✅                 | ❌      | ❌       | ❌    | ❌    |
-| **Service A** | ❌                  | ⚠️ (fallback REST) | ❌      | ✅       | ✅    | ✅    |
-| **Service B** | ❌                  | ❌                 | ❌      | ✅       | ✅    | ❌    |
+| From → To            | Booking Service        | Payment Service          | Room Service         | Notification Service | Gateway | Database |
+| -------------------- | ---------------------- | ------------------------ | -------------------- | -------------------- | ------- | -------- |
+| Frontend             | ❌                     | ❌                       | ❌                   | ❌                   | ✅      | ❌       |
+| Gateway              | REST                   | REST                     | REST                 | REST                 | ❌      | ❌       |
+| Booking Service      | ❌                     | Event (PaymentRequested) | Event (RoomReserved) | Event (SendEmail)    | ❌      | JDBC     |
+| Payment Service      | Event (PaymentSuccess) | ❌                       | ❌                   | ❌                   | ❌      | JDBC     |
+| Room Service         | ❌                     | ❌                       | ❌                   | ❌                   | ❌      | JDBC     |
+| Notification Service | ❌                     | ❌                       | ❌                   | ❌                   | ❌      | JDBC     |
 
 ---
 
@@ -64,21 +70,24 @@ Select patterns based on business/technical justifications from your analysis.
 > Place diagrams in `docs/asset/` and reference here.
 
 ```mermaid
-graph TD
-    A[Frontend] --> B[API Gateway]
+graph LR
+    U[User] --> FE[Frontend]
+    FE --> GW[API Gateway]
 
-    B --> C[Booking Service]
-    B --> D[Room Service]
+    GW --> BS[Booking Service]
+    GW --> PS[Payment Service]
+    GW --> RS[Room Service]
+    GW --> NS[Notification Service]
 
-    C -->|Produce Event| K[(Kafka)]
-    D -->|Consume/Produce| K
+    BS --> DB1[(Booking DB)]
+    PS --> DB2[(Payment DB)]
+    RS --> DB3[(Room DB)]
+    NS --> DB4[(Notification DB)]
 
-    C --> R[(Redis Lock)]
-
-    C --> E[(Booking DB)]
-    D --> F[(Room DB)]
-
-    C -->|Circuit Breaker REST| D 
+    BS --> MQ[(Message Broker)]
+    PS --> MQ
+    RS --> MQ
+    NS --> MQ
 ```
 
 ---

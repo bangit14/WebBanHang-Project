@@ -17,48 +17,31 @@
 
 Describe or diagram the high-level Business Process to be automated.
 
-- **Domain**: Hotel Booking System
-- **Business Process**: Online Room Reservation
-- **Actors**:
-  - Customer
-  - Booking System
-  - Room Service
-- **Scope**:
-  - Search room
-  - Check availability
-  - Booking room
-  - Hold the room temporarily
-  - Confirm or cancel booking
+- **Domain**: Hệ thống đặt phòng (Room Booking System)
+- **Business Process:** Quy trình đặt phòng và thanh toán
+- **Actors:** User (Khách hàng), Booking Service, Payment Service, Room Service, Email Service
+- **Scope:** Quản lý đặt phòng, Thanh toán, Đồng bộ trạng thái phòng, Gửi thông báo
 
 **Process Diagram:**
 
-```mermaid
-flowchart TD
-    A[User selects room] --> B[Check availability]
-    B -->|Available| C[Create Booking PENDING]
-    C --> D[Reserve Room]
-    D -->|Success| E[Confirm Booking]
-    D -->|Fail| F[Cancel Booking]
-    E --> G[End]
-    F --> G
-```
+Insert BPMN/flowchart into `docs/asset/` (ví dụ `docs/asset/booking-flow.png`) và tham chiếu ở đây.
 
 ### 1.2 Existing Automation Systems
 
-| System Name | Type | Current Role | Interaction Method |
-| ----------- | ---- | ------------ | ------------------ |
-| None        |      |              |                    |
+| System Name | Type | Current Role       | Interaction Method |
+| ----------- | ---- | ------------------ | ------------------ |
+| None        | -    | Quy trình thủ công | -                  |
 
-> If none exist, state: _"None — the process is currently performed manually."_
+> Nếu không có hệ thống tự động: "None — the process is currently performed manually."
 
 ### 1.3 Non-Functional Requirements
 
-| Requirement  | Description                                      |
-| ------------ | ------------------------------------------------ |
-| Performance  | Handle booking < 200ms, support concurrent users |
-| Security     | JWT authentication, validate input               |
-| Scalability  | Horizontal scaling                               |
-| Availability | 99.9% uptime, retry when service fails           |
+| Requirement  | Description                                                                   |
+| ------------ | ----------------------------------------------------------------------------- |
+| Performance  | Xử lý booking < 2s end-to-end (soft goal)                                     |
+| Security     | JWT authentication, HTTPS, validate payment callbacks, signature verification |
+| Scalability  | Mỗi service (Booking, Payment, Room, Email) có thể scale độc lập              |
+| Availability | 99.9% uptime; event retry/backoff cho các thao tác không thành công           |
 
 ---
 
@@ -67,117 +50,141 @@ flowchart TD
 ### 2.1 Event Storming — Domain Events
 
 List Domain Events in chronological order as they occur in the business process.
-Format: past tense (e.g., "OrderPlaced", "PaymentReceived").
 
-| #   | Domain Event     | Triggered By      | Description                        |
-| --- | ---------------- | ----------------- | ---------------------------------- |
-| 1   | RoomChecked      | CheckAvailability | Kiểm tra phòng còn hay không       |
-| 2   | BookingCreated   | CreateBooking     | Tạo booking với trạng thái PENDING |
-| 3   | RoomReserved     | ReserveRoom       | Phòng được giữ tạm                 |
-| 4   | BookingConfirmed | ConfirmBooking    | Booking thành công                 |
-| 5   | BookingCancelled | CancelBooking     | Booking bị hủy                     |
-| 6   | RoomReleased     | ReleaseRoom       | Phòng được trả lại                 |
+|   # | Domain Event     | Triggered By    | Description                                                                    |
+| --: | ---------------- | --------------- | ------------------------------------------------------------------------------ |
+|   1 | RoomSelected     | User            | Người dùng chọn phòng (chọn roomId, ngày, số lượng khách)                      |
+|   2 | BookingCreated   | Booking Service | Tạo booking với trạng thái PENDING (bookingId, userId, roomId)                 |
+|   3 | PaymentRequested | Booking Service | Booking Service gửi yêu cầu thanh toán tới Payment Service (amount, bookingId) |
+|   4 | PaymentSucceeded | Payment Service | Thanh toán thành công, trả về paymentId và status                              |
+|   5 | BookingConfirmed | Booking Service | Booking Service xác nhận booking sau khi nhận PaymentSucceeded                 |
+|   6 | RoomReserved     | Room Service    | Room Service cập nhật phòng là reserved cho khoảng thời gian tương ứng         |
+|   7 | EmailSent        | Email Service   | Email Service gửi email xác nhận tới khách hàng                                |
 
 ### 2.2 Commands and Actors
 
-What Commands trigger those Domain Events, and who issues them?
-
-| Command           | Actor           | Triggers Event(s) |
-| ----------------- | --------------- | ----------------- |
-| CheckAvailability | User            | RoomChecked       |
-| CreateBooking     | User            | BookingCreated    |
-| ReserveRoom       | Booking Service | RoomReserved      |
-| ConfirmBooking    | System          | BookingConfirmed  |
-| CancelBooking     | System/User     | BookingCancelled  |
-| ReleaseRoom       | Booking Service | RoomReleased      |
+| Command        | Actor           | Triggers Event(s) |
+| -------------- | --------------- | ----------------- |
+| SelectRoom     | User            | RoomSelected      |
+| CreateBooking  | Booking Service | BookingCreated    |
+| RequestPayment | Booking Service | PaymentRequested  |
+| ProcessPayment | Payment Service | PaymentSucceeded  |
+| ConfirmBooking | Booking Service | BookingConfirmed  |
+| ReserveRoom    | Room Service    | RoomReserved      |
+| SendEmail      | Email Service   | EmailSent         |
 
 ### 2.3 Aggregates
 
-Group related Commands and Events around the business entities (Aggregates) they operate on.
-
-| Aggregate | Commands                                     | Domain Events                                      | Owned Data                              |
-| --------- | -------------------------------------------- | -------------------------------------------------- | --------------------------------------- |
-| Booking   | CreateBooking, ConfirmBooking, CancelBooking | BookingCreated, BookingConfirmed, BookingCancelled | bookingId, userId, roomId, status, date |
-| Room      | ReserveRoom, ReleaseRoom                     | RoomReserved, RoomReleased                         | roomId, status, availability            |
+| Aggregate    | Commands                                      | Domain Events                                                      | Owned Data                                                       |
+| ------------ | --------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| Booking      | CreateBooking, ConfirmBooking, CancelBooking  | BookingCreated, BookingConfirmed, BookingCancelled                 | bookingId, status, userId, roomId, startDate, endDate, createdAt |
+| Payment      | RequestPayment, ProcessPayment, RefundPayment | PaymentRequested, PaymentSucceeded, PaymentFailed, PaymentRefunded | paymentId, bookingId, amount, currency, status, paidAt           |
+| Room         | ReserveRoom, ReleaseRoom                      | RoomReserved, RoomReleased                                         | roomId, status, reservations[] (periods), capacity, price        |
+| Notification | SendEmail                                     | EmailSent                                                          | emailId, bookingId, recipient, subject, body, sentAt             |
 
 ### 2.4 Bounded Contexts
 
-Draw boundaries around Aggregates that belong to the same business context. Each Bounded Context = one potential service.
-
-| Bounded Context | Aggregates | Responsibility            |
-| --------------- | ---------- | ------------------------- |
-| Booking Context | Booking    | Quản lý lifecycle booking |
-| Room Context    | Room       | Quản lý trạng thái phòng  |
+| Bounded Context      | Aggregates   | Responsibility                                                  |
+| -------------------- | ------------ | --------------------------------------------------------------- |
+| Booking Context      | Booking      | Quản lý vòng đời booking, orchestration payment và confirmation |
+| Payment Context      | Payment      | Xử lý thanh toán, lưu lịch sử giao dịch, webhook xử lý callback |
+| Room Context         | Room         | Quản lý trạng thái phòng, kiểm tra khả năng đặt và khóa phòng   |
+| Notification Context | Notification | Gửi email/SMS thông báo cho user                                |
 
 ### 2.5 Context Map
 
-Show relationships between Bounded Contexts.
-
 ```mermaid
 graph LR
-    BookingContext -- "Customer/Supplier" --> RoomContext
+    Booking[Booking] -->|RequestPayment| Payment[Payment]
+    Payment -->|Publish PaymentSucceeded| Booking
+    Booking -->|ReserveRoom| Room[Room]
+    Booking -->|Open Host Service| Notification[Notification]
 ```
 
-**Relationship types:** Upstream/Downstream, Customer/Supplier, Conformist, Anti-Corruption Layer (ACL), Shared Kernel, Open Host Service (OHS), Published Language.
-
-| Upstream        | Downstream      | Relationship Type |
-| --------------- | --------------- | ----------------- |
-| Room Context    | Booking Context | Supplier          |
-| Booking Context | Room context    | Customer          |
+| Upstream | Downstream   | Relationship Type  |
+| -------- | ------------ | ------------------ |
+| Booking  | Payment      | Customer/Supplier  |
+| Payment  | Booking      | Published Language |
+| Booking  | Room         | Customer/Supplier  |
+| Booking  | Notification | Open Host Service  |
 
 ---
 
 ## Part 3 — Service-Oriented Design
 
-### 3.1 Uniform Contract Design
+### 3.1 Service Contract Design
 
-Service Contract specification for each Bounded Context / service.
-Full OpenAPI specs:
-
-- [`docs/api-specs/service-a.yaml`](api-specs/service-a.yaml)
-- [`docs/api-specs/service-b.yaml`](api-specs/service-b.yaml)
-
-**Booking Service:**
+🟦 Booking Service
 
 | Endpoint               | Method | Media Type       | Response Codes |
 | ---------------------- | ------ | ---------------- | -------------- |
 | /bookings              | POST   | application/json | 201, 400       |
-| /bookings/{id}         | GET    | application/json | 200, 404       |
-| /bookings/{id}/confirm | POST   | application/json | 200, 400       |
-| /bookings/{id}/cancel  | POST   | application/json | 200, 400       |
+| /bookings/{id}/confirm | POST   | application/json | 200, 404       |
 
-**Room Service:**
+🟩 Payment Service
 
-| Endpoint                 | Method | Media Type       | Response Codes |
-| ------------------------ | ------ | ---------------- | -------------- |
-| /rooms/{id}/availability | GET    | application/json | 200            |
-| /rooms/{id}/reserve      | POST   | application/json | 200, 400       |
-| /rooms/{id}/release      | POST   | application/json | 200            |
+| Endpoint  | Method | Media Type       | Response Codes |
+| --------- | ------ | ---------------- | -------------- |
+| /payments | POST   | application/json | 200, 400       |
 
-### 3.2 Service Logic Design
+🟨 Room Service
 
-Internal processing flow for each service.
+| Endpoint            | Method | Media Type       | Response Codes |
+| ------------------- | ------ | ---------------- | -------------- |
+| /rooms/{id}/reserve | POST   | application/json | 200, 404       |
 
-**Service A:**
+🟥 Notification Service
 
-```mermaid
-flowchart TD
-    A[Receive Booking Request] --> B{Validate?}
-    B -->|Invalid| C[Return 400]
-    B -->|Valid| D[Create Booking PENDING]
-    D --> E[Call Room Service Reserve]
-    E -->|Success| F[Confirm Booking]
-    E -->|Fail| G[Cancel Booking]
-    F --> H[Return Success]
-    G --> I[Return Fail]
-```
+| Endpoint             | Method | Media Type       | Response Codes |
+| -------------------- | ------ | ---------------- | -------------- |
+| /notifications/email | POST   | application/json | 200            |
 
-**Service B:**
+### 3.2 Service Logic Design (flowcharts)
+
+booking-service
 
 ```mermaid
 flowchart TD
-    A[Receive Request] --> B{Check Availability}
-    B -->|Available| C[Update status RESERVED]
-    B -->|Not Available| D[Return Fail]
-    C --> E[Return Success]
+    A[User Create Booking] --> B[Save Booking PENDING]
+    B --> C[Publish PaymentRequested]
+    C --> D[Wait PaymentSuccess Event]
+    D --> E[Confirm Booking]
+    E --> F[Publish RoomReserved]
+    E --> G[Publish SendEmail]
 ```
+
+payment-service
+
+```mermaid
+flowchart TD
+    A[Receive Payment Request] --> B[Process Payment]
+    B --> C{Success?}
+    C -->|Yes| D[Publish PaymentSucceeded]
+    C -->|No| E[Publish PaymentFailed]
+```
+
+room-service
+
+```mermaid
+flowchart TD
+    A[Receive ReserveRoom] --> B[Update Room Status]
+    B --> C[Done]
+```
+
+notification-service
+
+```mermaid
+flowchart TD
+    A[Receive SendEmail] --> B[Send Email]
+    B --> C[Done]
+```
+
+---
+
+**Ghi chú triển khai:**
+
+- Sử dụng JWT cho xác thực giữa các service (service-to-service) hoặc mTLS nếu cần.
+- Các events (PaymentSucceeded, BookingCreated, RoomReserved) nên được publish qua message broker (RabbitMQ/ Kafka) để đảm bảo eventual consistency và retry.
+- Mỗi service cần health check `/health` trả `{ "status": "ok" }`.
+
+Tài liệu này đã điền theo đề bài: quy trình, sự kiện, commands, aggregates, bounded contexts và contract tóm tắt. Bạn muốn tôi lưu lại phiên bản Markdown hoàn chỉnh vào repository (hiện đã cập nhật file này), hay tạo thêm OpenAPI spec mẫu cho từng service không?
